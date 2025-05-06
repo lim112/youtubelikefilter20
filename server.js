@@ -158,8 +158,17 @@ app.get('/dashboard', (req, res) => {
 app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
   try {
     // 페이지네이션 및 필터링 매개변수
-    const limit = parseInt(req.query.limit) || 1000; // 대부분의 사용자가 1000개 이상의 좋아요를 누르지 않으므로 충분히 큰 값 설정
-    const offset = parseInt(req.query.offset) || 0;
+    const pageSize = 100; // 한 페이지당 100개 항목
+    let offset = 0;
+    let limit = pageSize;
+    
+    // 페이지 토큰이 있으면 해당 값을 offset으로 사용
+    if (req.query.pageToken) {
+      offset = parseInt(req.query.pageToken);
+      console.log(`페이지 토큰으로 offset 설정: ${offset}`);
+    }
+    
+    // 필터링 매개변수
     const filter = {}; // 기본적으로 필터 없음
     
     // 필터 매개변수가 있는 경우에만 적용
@@ -338,28 +347,48 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       // 저장 후 필터링된 데이터 다시 가져오기
       const updatedVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter);
       
+      // 전체 비디오 개수 구하기
+      const totalCount = await storage.countLikedVideos(req.user.id, filter);
+      
+      // 다음 페이지 토큰 (offset 기반)
+      const nextPageOffset = offset + pageSize < totalCount ? offset + pageSize : null;
+      
+      // 이전 페이지 토큰 (offset 기반)
+      const prevPageOffset = offset - pageSize >= 0 ? offset - pageSize : null;
+      
       return res.json({
         items: updatedVideos,
         pageInfo: {
-          totalResults: updatedVideos.length,
-          resultsPerPage: limit
+          totalResults: totalCount,
+          resultsPerPage: pageSize,
+          currentOffset: offset
         },
         fromCache: false,
-        nextPageToken: response.data.nextPageToken || null,
-        prevPageToken: response.data.prevPageToken || null
+        nextPageToken: nextPageOffset !== null ? nextPageOffset.toString() : null,
+        prevPageToken: prevPageOffset !== null ? prevPageOffset.toString() : null
       });
     }
+    
+    // 전체 비디오 개수 가져오기
+    const totalCount = await storage.countLikedVideos(req.user.id, filter);
+    
+    // 다음 페이지 토큰 (offset 기반)
+    const nextPageOffset = offset + pageSize < totalCount ? offset + pageSize : null;
+    
+    // 이전 페이지 토큰 (offset 기반)
+    const prevPageOffset = offset - pageSize >= 0 ? offset - pageSize : null;
     
     // 캐시된 데이터 반환
     return res.json({
       items: dbVideos,
       pageInfo: {
-        totalResults: dbVideos.length,
-        resultsPerPage: limit
+        totalResults: totalCount,
+        resultsPerPage: pageSize,
+        currentOffset: offset
       },
       fromCache: true,
-      nextPageToken: null,
-      prevPageToken: null
+      nextPageToken: nextPageOffset !== null ? nextPageOffset.toString() : null,
+      prevPageToken: prevPageOffset !== null ? prevPageOffset.toString() : null
     });
   } catch (error) {
     console.error('API Error:', error);

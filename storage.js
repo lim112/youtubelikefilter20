@@ -67,7 +67,7 @@ class Storage {
   }
 
   // 좋아요한 영상 관련 메서드
-  async getLikedVideos(userId, limit = 50, offset = 0, filter = {}) {
+  async getLikedVideos(userId, limit = 100, offset = 0, filter = {}) {
     try {
       let query = db
         .select()
@@ -75,7 +75,7 @@ class Storage {
         .where(eq(likedVideos.userId, userId))
         .limit(limit)
         .offset(offset)
-        .orderBy(desc(likedVideos.createdAt));
+        .orderBy(desc(likedVideos.publishedAt)); // createdAt이 아닌 publishedAt으로 정렬
       
       // 필터 적용
       if (filter.channelId) {
@@ -86,11 +86,40 @@ class Storage {
         query = query.where(like(likedVideos.title, `%${filter.title}%`));
       }
       
+      // 디버깅 로그 추가
+      console.log(`DB 쿼리 실행: limit=${limit}, offset=${offset}`);
+      
       const videos = await query;
+      console.log(`DB에서 ${videos.length}개 비디오 조회됨`);
       return videos;
     } catch (error) {
       console.error('좋아요한 영상 조회 오류:', error);
       return [];
+    }
+  }
+  
+  // 좋아요한 비디오 총 개수 조회
+  async countLikedVideos(userId, filter = {}) {
+    try {
+      let query = db
+        .select({ count: count() })
+        .from(likedVideos)
+        .where(eq(likedVideos.userId, userId));
+      
+      // 필터 적용
+      if (filter.channelId) {
+        query = query.where(eq(likedVideos.channelId, filter.channelId));
+      }
+      
+      if (filter.title) {
+        query = query.where(like(likedVideos.title, `%${filter.title}%`));
+      }
+      
+      const [result] = await query;
+      return result?.count || 0;
+    } catch (error) {
+      console.error('비디오 개수 조회 오류:', error);
+      return 0;
     }
   }
 
