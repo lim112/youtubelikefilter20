@@ -495,11 +495,13 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function changePage(direction) {
     if (direction === 'prev' && prevPageToken) {
-      fetchLikedVideos(prevPageToken);
+      fetchLikedVideos(prevPageToken, false);
       currentPage--;
+      console.log(`이전 페이지로 이동: ${currentPage}페이지, 토큰=${prevPageToken}`);
     } else if (direction === 'next' && nextPageToken) {
-      fetchLikedVideos(nextPageToken);
+      fetchLikedVideos(nextPageToken, false);
       currentPage++;
+      console.log(`다음 페이지로 이동: ${currentPage}페이지, 토큰=${nextPageToken}`);
     }
   }
   
@@ -514,12 +516,39 @@ document.addEventListener('DOMContentLoaded', function() {
     prevPageBtn.disabled = !prevPageToken;
     nextPageBtn.disabled = !nextPageToken;
     
+    // 총 항목 수와 현재 표시 중인 범위를 계산 (있는 경우)
+    const totalItems = filteredVideos.length;
+    let paginationStatus = '';
+    
+    if (totalItems > 0) {
+      const start = (currentPage - 1) * 100 + 1;
+      const end = Math.min(start + filteredVideos.length - 1, totalItems);
+      paginationStatus = `${formatNumber(start)}-${formatNumber(end)} / ${formatNumber(totalItems)}개 항목`;
+    } else {
+      paginationStatus = '항목 없음';
+    }
+    
+    // 페이지네이션 상태 정보 업데이트
+    const paginationDetails = document.getElementById('pagination-details');
+    if (paginationDetails) {
+      paginationDetails.textContent = paginationStatus;
+    }
+    
     // 페이지네이션 표시/숨김
-    if (!prevPageToken && !nextPageToken && allVideos.length <= 50) {
+    if (!prevPageToken && !nextPageToken && filteredVideos.length < 100) {
       document.getElementById('pagination').classList.add('hidden');
     } else {
       document.getElementById('pagination').classList.remove('hidden');
     }
+  }
+  
+  /**
+   * 숫자를 천 단위 구분 기호가 있는 문자열로 변환
+   * @param {number} num - 변환할 숫자
+   * @returns {string} 변환된 문자열
+   */
+  function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
   
   /**

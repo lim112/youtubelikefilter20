@@ -1,6 +1,6 @@
 const { db } = require('./db');
 const { users, likedVideos, playlists, playlistVideos, userSettings } = require('./shared/schema');
-const { eq, desc, asc, and, or, like } = require('drizzle-orm');
+const { eq, desc, asc, and, or, like, sql } = require('drizzle-orm');
 const connectPg = require('connect-pg-simple');
 
 // 스토리지 인터페이스 - 데이터 관리를 위한 일관된 메서드 제공
@@ -102,7 +102,7 @@ class Storage {
   async countLikedVideos(userId, filter = {}) {
     try {
       let query = db
-        .select({ count: count() })
+        .select({ count: sql`count(*)` })
         .from(likedVideos)
         .where(eq(likedVideos.userId, userId));
       
