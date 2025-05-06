@@ -248,7 +248,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
         maxResults: 100 // 페이지당 100개 항목으로 설정
       };
 
-      if (req.query.pageToken) {
+      // API 새로고침 요청이면 YouTube API의 pageToken을 사용
+      // 그 외의 경우(DB 조회)에는 사용하지 않음
+      if (req.query.pageToken && req.query.refresh === 'true') {
         params.pageToken = req.query.pageToken;
       }
 
