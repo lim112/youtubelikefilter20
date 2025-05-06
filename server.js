@@ -298,15 +298,43 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
           // 기타 API 오류
           if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             // API 요청인 경우 JSON 응답
-            return res.json({
-              items: dbVideos,
-              pageInfo: {
-                totalResults: dbVideos.length,
-                resultsPerPage: limit
-              },
-              fromCache: true,
-              error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
-            });
+            try {
+              // 전체 비디오 개수 가져오기
+              const totalCount = await storage.countLikedVideos(req.user.id, filter);
+              
+              // 다음 페이지 토큰 (offset 기반)
+              const nextPageOffset = offset + limit < totalCount ? offset + limit : null;
+              
+              // 이전 페이지 토큰 (offset 기반)
+              const prevPageOffset = offset - limit >= 0 ? offset - limit : null;
+              
+              return res.json({
+                items: dbVideos,
+                pageInfo: {
+                  totalResults: totalCount,
+                  resultsPerPage: limit,
+                  currentOffset: offset
+                },
+                fromCache: true,
+                nextPageToken: nextPageOffset !== null ? nextPageOffset.toString() : null,
+                prevPageToken: prevPageOffset !== null ? prevPageOffset.toString() : null,
+                error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
+              });
+            } catch (countError) {
+              console.error('카운트 조회 오류:', countError);
+              
+              // 카운트 조회 오류 시 기본 응답
+              return res.json({
+                items: dbVideos,
+                pageInfo: {
+                  totalResults: dbVideos.length,
+                  resultsPerPage: limit,
+                  currentOffset: offset
+                },
+                fromCache: true,
+                error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
+              });
+            }
           } else {
             // 일반 요청인 경우 리디렉션 (API 오류 메시지와 함께)
             const errorMsg = encodeURIComponent(apiError.message || '알 수 없는 오류');

@@ -307,6 +307,10 @@ select {
   font-size: 14px;
   color: var(--text-secondary);
   text-align: center;
+  background-color: var(--bg-light);
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .pagination-btn {
@@ -316,10 +320,17 @@ select {
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .pagination-btn:hover:not(:disabled) {
   background-color: var(--bg-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .pagination-btn:disabled {
@@ -329,6 +340,10 @@ select {
 
 #page-info {
   font-size: 14px;
+  font-weight: 600;
+  padding: 0 10px;
+  min-width: 80px;
+  text-align: center;
 }
 
 /* 대시보드 푸터 */
