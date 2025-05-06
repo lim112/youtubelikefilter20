@@ -67,7 +67,7 @@ class Storage {
   }
 
   // 좋아요한 영상 관련 메서드
-  async getLikedVideos(userId, limit = 100, offset = 0, filter = {}) {
+  async getLikedVideos(userId, limit = 100, offset = 0, filter = {}, loadThumbnails = true) {
     try {
       // 기본 정렬 설정 (기본값: 게시일 내림차순)
       let orderByClause = desc(likedVideos.publishedAt);
@@ -85,9 +85,31 @@ class Storage {
         }
       }
       
-      let query = db
-        .select()
-        .from(likedVideos)
+      let query;
+      
+      if (loadThumbnails) {
+        // 썸네일 포함 전체 데이터 로드
+        query = db.select().from(likedVideos);
+      } else {
+        // 메타데이터만 로드 (썸네일 URL 제외)
+        query = db.select({
+          id: likedVideos.id,
+          userId: likedVideos.userId,
+          videoId: likedVideos.videoId,
+          title: likedVideos.title,
+          channelId: likedVideos.channelId,
+          channelTitle: likedVideos.channelTitle,
+          publishedAt: likedVideos.publishedAt,
+          duration: likedVideos.duration,
+          viewCount: likedVideos.viewCount,
+          likeCount: likedVideos.likeCount,
+          createdAt: likedVideos.createdAt,
+          updatedAt: likedVideos.updatedAt
+        }).from(likedVideos);
+      }
+      
+      // 공통 쿼리 조건 추가
+      query = query
         .where(eq(likedVideos.userId, userId))
         .limit(limit)
         .offset(offset)
@@ -98,12 +120,13 @@ class Storage {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      // 검색어 필터 적용 (제목 또는 설명에 포함)
+      // 검색어 필터 적용 (제목, 설명 또는 채널명에 포함)
       if (filter.search) {
         query = query.where(
           or(
             like(likedVideos.title, `%${filter.search}%`),
-            like(likedVideos.description, `%${filter.search}%`)
+            like(likedVideos.description, `%${filter.search}%`),
+            like(likedVideos.channelTitle, `%${filter.search}%`)
           )
         );
       }
@@ -145,14 +168,46 @@ class Storage {
       }
       
       // 디버깅 로그 추가
-      console.log(`DB 쿼리 실행: limit=${limit}, offset=${offset}`);
+      console.log(`DB 쿼리 실행: limit=${limit}, offset=${offset}, loadThumbnails=${loadThumbnails}`);
       
       const videos = await query;
-      console.log(`DB에서 ${videos.length}개 비디오 조회됨`);
+      console.log(`DB에서 ${videos.length}개 비디오 조회됨${loadThumbnails ? '' : ' (메타데이터만)'}`);
       return videos;
     } catch (error) {
       console.error('좋아요한 영상 조회 오류:', error);
       return [];
+    }
+  }
+  
+  // 메타데이터만 가져오는 함수 (채널, 게시일, 영상 길이 정보)
+  async getVideoMetadata(userId) {
+    try {
+      console.log(`사용자 ${userId}의 비디오 메타데이터 로드 중...`);
+      
+      // 1. 채널 정보 가져오기
+      const channels = await db
+        .selectDistinct({
+          channelId: likedVideos.channelId,
+          channelTitle: likedVideos.channelTitle,
+          videoCount: sql`COUNT(${likedVideos.id})::int`
+        })
+        .from(likedVideos)
+        .where(eq(likedVideos.userId, userId))
+        .groupBy(likedVideos.channelId, likedVideos.channelTitle)
+        .orderBy(desc(sql`COUNT(${likedVideos.id})`)); // 영상이 많은 채널 순으로 정렬
+      
+      console.log(`${channels.length}개 채널 메타데이터 로드됨`);
+      
+      return { 
+        channels,
+        totalVideos: await this.countLikedVideos(userId)
+      };
+    } catch (error) {
+      console.error('메타데이터 로드 오류:', error);
+      return { 
+        channels: [],
+        totalVideos: 0
+      };
     }
   }
   
