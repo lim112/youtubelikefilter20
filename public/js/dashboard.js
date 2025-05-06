@@ -245,9 +245,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // 채널 선택 메뉴 업데이트
       populateChannelSelect();
       
-      // 정렬 적용
-      applySorting();
-      
       // 비디오 표시
       displayVideos(filteredVideos);
       
@@ -411,13 +408,13 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function changePage(direction) {
     if (direction === 'prev' && prevPageToken) {
-      fetchLikedVideos(prevPageToken, false);
       currentPage--;
       console.log(`이전 페이지로 이동: ${currentPage}페이지, 토큰=${prevPageToken}`);
+      fetchLikedVideos(prevPageToken, false);
     } else if (direction === 'next' && nextPageToken) {
-      fetchLikedVideos(nextPageToken, false);
       currentPage++;
       console.log(`다음 페이지로 이동: ${currentPage}페이지, 토큰=${nextPageToken}`);
+      fetchLikedVideos(nextPageToken, false);
     }
   }
   
