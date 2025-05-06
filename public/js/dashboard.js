@@ -187,10 +187,12 @@ document.addEventListener('DOMContentLoaded', function() {
     channels.clear();
     
     allVideos.forEach(video => {
-      const channelId = video.snippet.channelId;
-      const channelTitle = video.snippet.channelTitle;
+      const isYoutubeApi = video.snippet !== undefined;
       
-      if (!channels.has(channelId)) {
+      const channelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
+      const channelTitle = isYoutubeApi ? video.snippet.channelTitle : video.channelTitle;
+      
+      if (channelId && !channels.has(channelId)) {
         channels.set(channelId, {
           id: channelId,
           title: channelTitle
@@ -232,19 +234,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 모든 비디오 중 필터링
     filteredVideos = allVideos.filter(video => {
+      const isYoutubeApi = video.snippet !== undefined;
+      
       // 제목 검색
-      const title = video.snippet.title.toLowerCase();
-      const description = video.snippet.description.toLowerCase();
+      const title = isYoutubeApi ? video.snippet.title.toLowerCase() : video.title.toLowerCase();
+      const description = isYoutubeApi 
+        ? video.snippet.description.toLowerCase() 
+        : (video.description ? video.description.toLowerCase() : '');
       const matchesSearch = !searchTerm || 
                            title.includes(searchTerm) || 
                            description.includes(searchTerm);
       
       // 채널 필터링
-      const matchesChannel = !selectedChannel || 
-                            video.snippet.channelId === selectedChannel;
+      const videoChannelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
+      const matchesChannel = !selectedChannel || videoChannelId === selectedChannel;
       
       // 날짜 필터링
-      const publishedAt = new Date(video.snippet.publishedAt);
+      const publishedAt = new Date(isYoutubeApi ? video.snippet.publishedAt : video.publishedAt);
       const now = new Date();
       let matchesDate = true;
       
@@ -265,16 +271,24 @@ document.addEventListener('DOMContentLoaded', function() {
       // 영상 길이 필터링
       let matchesDuration = true;
       
-      if (selectedDuration && video.contentDetails && video.contentDetails.duration) {
-        const duration = video.contentDetails.duration;
-        const durationInSeconds = parseDuration(duration);
+      if (selectedDuration) {
+        let durationString;
+        if (isYoutubeApi && video.contentDetails?.duration) {
+          durationString = video.contentDetails.duration;
+        } else if (!isYoutubeApi && video.duration) {
+          durationString = video.duration;
+        }
         
-        if (selectedDuration === 'short') {
-          matchesDuration = durationInSeconds < 240; // 4분 미만
-        } else if (selectedDuration === 'medium') {
-          matchesDuration = durationInSeconds >= 240 && durationInSeconds <= 1200; // 4-20분
-        } else if (selectedDuration === 'long') {
-          matchesDuration = durationInSeconds > 1200; // 20분 초과
+        if (durationString) {
+          const durationInSeconds = parseDuration(durationString);
+          
+          if (selectedDuration === 'short') {
+            matchesDuration = durationInSeconds < 240; // 4분 미만
+          } else if (selectedDuration === 'medium') {
+            matchesDuration = durationInSeconds >= 240 && durationInSeconds <= 1200; // 4-20분
+          } else if (selectedDuration === 'long') {
+            matchesDuration = durationInSeconds > 1200; // 20분 초과
+          }
         }
       }
       
@@ -400,11 +414,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 비디오 데이터 추가
     filteredVideos.forEach(video => {
-      const title = `"${video.snippet.title.replace(/"/g, '""')}"`;
-      const channel = `"${video.snippet.channelTitle.replace(/"/g, '""')}"`;
-      const publishedAt = formatDate(video.snippet.publishedAt);
-      const viewCount = video.statistics?.viewCount || '0';
-      const url = createYouTubeUrl(video.id);
+      const isYoutubeApi = video.snippet !== undefined;
+      
+      // 데이터 형식에 따라 필드 추출
+      const title = isYoutubeApi
+        ? `"${video.snippet.title.replace(/"/g, '""')}"`
+        : `"${video.title.replace(/"/g, '""')}"`;
+      
+      const channel = isYoutubeApi
+        ? `"${video.snippet.channelTitle.replace(/"/g, '""')}"`
+        : `"${video.channelTitle.replace(/"/g, '""')}"`;
+      
+      const publishedAt = formatDate(isYoutubeApi ? video.snippet.publishedAt : video.publishedAt);
+      
+      const viewCount = isYoutubeApi
+        ? video.statistics?.viewCount || '0'
+        : video.viewCount || '0';
+      
+      const videoId = isYoutubeApi ? video.id : video.videoId;
+      const url = createYouTubeUrl(videoId);
       
       csv += `${title},${channel},${publishedAt},${viewCount},${url}\n`;
     });
@@ -428,20 +456,26 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function exportToJson() {
     // 필요한 데이터만 추출
-    const data = filteredVideos.map(video => ({
-      id: video.id,
-      title: video.snippet.title,
-      description: video.snippet.description,
-      publishedAt: video.snippet.publishedAt,
-      channelId: video.snippet.channelId,
-      channelTitle: video.snippet.channelTitle,
-      thumbnail: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url,
-      duration: video.contentDetails?.duration,
-      viewCount: video.statistics?.viewCount || '0',
-      likeCount: video.statistics?.likeCount || '0',
-      url: createYouTubeUrl(video.id),
-      channelUrl: createChannelUrl(video.snippet.channelId)
-    }));
+    const data = filteredVideos.map(video => {
+      const isYoutubeApi = video.snippet !== undefined;
+      
+      return {
+        id: isYoutubeApi ? video.id : video.videoId,
+        title: isYoutubeApi ? video.snippet.title : video.title,
+        description: isYoutubeApi ? video.snippet.description : video.description,
+        publishedAt: isYoutubeApi ? video.snippet.publishedAt : video.publishedAt,
+        channelId: isYoutubeApi ? video.snippet.channelId : video.channelId,
+        channelTitle: isYoutubeApi ? video.snippet.channelTitle : video.channelTitle,
+        thumbnail: isYoutubeApi
+          ? (video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url)
+          : video.thumbnailUrl,
+        duration: isYoutubeApi ? video.contentDetails?.duration : video.duration,
+        viewCount: isYoutubeApi ? (video.statistics?.viewCount || '0') : (video.viewCount || '0'),
+        likeCount: isYoutubeApi ? (video.statistics?.likeCount || '0') : (video.likeCount || '0'),
+        url: createYouTubeUrl(isYoutubeApi ? video.id : video.videoId),
+        channelUrl: createChannelUrl(isYoutubeApi ? video.snippet.channelId : video.channelId)
+      };
+    });
     
     // 다운로드 링크 생성
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -481,20 +515,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const card = document.createElement('div');
     card.className = 'video-card';
     
+    // 비디오 데이터 구조 확인 (YouTube API 응답인지 DB에서 가져온 형식인지)
+    // 서버에서 가져온 데이터 형식에 맞게 처리
+    const isYoutubeApi = video.snippet !== undefined;
+    
     // 썸네일 및 duration
     const thumbnail = document.createElement('div');
     thumbnail.className = 'video-thumbnail';
     
     const thumbnailImg = document.createElement('img');
-    thumbnailImg.src = video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url;
-    thumbnailImg.alt = video.snippet.title;
+    // 데이터 소스에 따라 다른 속성 사용
+    if (isYoutubeApi) {
+      thumbnailImg.src = video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url;
+      thumbnailImg.alt = video.snippet.title;
+    } else {
+      thumbnailImg.src = video.thumbnailUrl;
+      thumbnailImg.alt = video.title;
+    }
     thumbnail.appendChild(thumbnailImg);
     
     // 영상 길이 (있는 경우)
-    if (video.contentDetails && video.contentDetails.duration) {
+    if ((isYoutubeApi && video.contentDetails?.duration) || (!isYoutubeApi && video.duration)) {
       const duration = document.createElement('div');
       duration.className = 'video-duration';
-      duration.textContent = formatDuration(video.contentDetails.duration);
+      const durationText = isYoutubeApi ? video.contentDetails.duration : video.duration;
+      duration.textContent = formatDuration(durationText);
       thumbnail.appendChild(duration);
     }
     
@@ -504,23 +549,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const title = document.createElement('div');
     title.className = 'video-title';
-    title.textContent = video.snippet.title;
+    title.textContent = isYoutubeApi ? video.snippet.title : video.title;
     info.appendChild(title);
     
     const channel = document.createElement('div');
     channel.className = 'video-channel';
-    channel.textContent = video.snippet.channelTitle;
+    channel.textContent = isYoutubeApi ? video.snippet.channelTitle : video.channelTitle;
     info.appendChild(channel);
     
     const stats = document.createElement('div');
     stats.className = 'video-stats';
     
     const views = document.createElement('span');
-    views.textContent = `조회수 ${formatViewCount(video.statistics?.viewCount || '0')}회`;
+    const viewCount = isYoutubeApi 
+      ? (video.statistics?.viewCount || '0')
+      : (video.viewCount || '0');
+    views.textContent = `조회수 ${formatViewCount(viewCount)}회`;
     stats.appendChild(views);
     
     const date = document.createElement('span');
-    date.textContent = formatDate(video.snippet.publishedAt);
+    const publishDate = isYoutubeApi ? video.snippet.publishedAt : video.publishedAt;
+    date.textContent = formatDate(publishDate);
     stats.appendChild(date);
     
     info.appendChild(stats);
@@ -530,7 +579,8 @@ document.addEventListener('DOMContentLoaded', function() {
     card.appendChild(info);
     
     card.addEventListener('click', () => {
-      window.open(createYouTubeUrl(video.id), '_blank');
+      const videoId = isYoutubeApi ? video.id : video.videoId;
+      window.open(createYouTubeUrl(videoId), '_blank');
     });
     
     return card;

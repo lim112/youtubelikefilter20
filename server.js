@@ -156,8 +156,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     // 페이지네이션 및 필터링 매개변수
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
-    const filter = {};
+    const filter = {}; // 기본적으로 필터 없음
     
+    // 필터 매개변수가 있는 경우에만 적용
     if (req.query.channelId) {
       filter.channelId = req.query.channelId;
     }
@@ -166,7 +167,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       filter.title = req.query.title;
     }
     
-    // 로컬 데이터베이스에서 먼저 확인
+    // 로컬 데이터베이스에서 먼저, 필터가 없으면 모든 영상 반환
     const dbVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter);
     
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
