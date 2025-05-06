@@ -550,8 +550,11 @@ document.addEventListener('DOMContentLoaded', function() {
    * CSV 형식으로 내보내기
    */
   function exportToCsv() {
+    // UTF-8 BOM 추가 (Excel에서 한글 인코딩 인식을 위함)
+    const BOM = '\uFEFF';
+    
     // CSV 헤더
-    let csv = '제목,채널,게시일,조회수,좋아요 수,영상 길이,URL\n';
+    let csv = BOM + '제목,채널,게시일,조회수,좋아요 수,영상 길이,URL\n';
     
     // 비디오 데이터 추가
     filteredVideos.forEach(video => {
