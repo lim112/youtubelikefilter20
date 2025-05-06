@@ -132,12 +132,24 @@
     <p>이 크롬 확장 프로그램을 사용하려면 다음 단계를 따르세요:</p>
     <ol class="steps">
       <li>
-        <strong>Google 클라이언트 ID 얻기</strong><br>
-        <a href="https://console.developers.google.com/" target="_blank">Google 개발자 콘솔</a>에서 새 프로젝트를 만들고 OAuth 클라이언트 ID를 생성하세요. YouTube Data API를 활성화하고 OAuth 동의 화면을 설정해야 합니다.
+        <strong>Google 프로젝트 생성</strong><br>
+        <a href="https://console.developers.google.com/" target="_blank">Google 개발자 콘솔</a>에서 새 프로젝트를 만드세요.
+      </li>
+      <li>
+        <strong>YouTube Data API 활성화</strong><br>
+        라이브러리에서 YouTube Data API v3를 찾아 활성화하세요.
+      </li>
+      <li>
+        <strong>OAuth 동의 화면 설정</strong><br>
+        사용자 인증 정보 > OAuth 동의 화면에서 필요한 정보를 설정하세요. 개발 단계에서는 '내부' 또는 '테스트'로 설정하고 본인 계정을 테스트 사용자로 추가하세요.
+      </li>
+      <li>
+        <strong>클라이언트 ID 생성</strong><br>
+        사용자 인증 정보에서 OAuth 클라이언트 ID를 생성하세요 (유형: '데스크톱 앱' 또는 '기타').
       </li>
       <li>
         <strong>클라이언트 ID 설정</strong><br>
-        manifest.json 파일에서 <code>${GOOGLE_CLIENT_ID}</code> 부분을 실제 클라이언트 ID로 변경하세요.
+        manifest.json 파일에서 <code>YOUR_CLIENT_ID_HERE</code> 부분을 받은 클라이언트 ID로 변경하세요.
       </li>
       <li>
         <strong>크롬에 확장 프로그램 로드</strong><br>

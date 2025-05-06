@@ -28,7 +28,7 @@
     "128": "icons/icon128.svg"
   },
   "oauth2": {
-    "client_id": "${GOOGLE_CLIENT_ID}",
+    "client_id": "YOUR_CLIENT_ID_HERE",
     "scopes": [
       "https://www.googleapis.com/auth/youtube.readonly"
     ]
