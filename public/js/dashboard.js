@@ -575,11 +575,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // 컨테이너 비우기
     videosContainer.innerHTML = '';
     
-    // 비디오 요소 추가
-    videos.forEach(video => {
-      const videoElement = createVideoElement(video);
+    // 비디오 요소 추가 (최대 100개씩 표시)
+    const maxVideosPerPage = 100; // 페이지당 표시할 최대 비디오 수
+    const displayCount = Math.min(videos.length, maxVideosPerPage);
+    
+    console.log(`표시할 비디오 수: ${displayCount}/${videos.length}`);
+    
+    // 메모리 사용량 최적화를 위해 일정 개수의 영상만 렌더링
+    for (let i = 0; i < displayCount; i++) {
+      const videoElement = createVideoElement(videos[i]);
       videosContainer.appendChild(videoElement);
-    });
+    }
+    
+    // 표시된 비디오가 전체보다 적으면 "더 보기" 버튼 추가
+    if (videos.length > maxVideosPerPage) {
+      const loadMoreBtn = document.createElement('button');
+      loadMoreBtn.className = 'btn primary load-more-btn';
+      loadMoreBtn.textContent = `더 많은 영상 보기 (${displayCount}/${videos.length})`;
+      loadMoreBtn.onclick = () => {
+        // 추가로 100개씩 더 표시
+        const currentCount = videosContainer.querySelectorAll('.video-card').length;
+        const nextBatch = videos.slice(currentCount, currentCount + maxVideosPerPage);
+        
+        // 기존 "더 보기" 버튼을 일시적으로 제거
+        loadMoreBtn.remove();
+        
+        nextBatch.forEach(video => {
+          const videoElement = createVideoElement(video);
+          videosContainer.appendChild(videoElement);
+        });
+        
+        // 모든 비디오가 표시되었는지 확인
+        const newCount = videosContainer.querySelectorAll('.video-card').length;
+        if (newCount >= videos.length) {
+          // 모든 비디오가 표시되면 버튼 제거됨
+        } else {
+          // 버튼 업데이트 후 다시 추가
+          loadMoreBtn.textContent = `더 많은 영상 보기 (${newCount}/${videos.length})`;
+          videosContainer.appendChild(loadMoreBtn);
+        }
+      };
+      videosContainer.appendChild(loadMoreBtn);
+    }
   }
   
   /**

@@ -76,9 +76,8 @@ class Storage {
         .limit(limit)
         .offset(offset);
       
-      // 기본적으로 좋아요 순서(YouTube API 응답 순서)로 정렬
-      // 낮은 likeOrder 값이 더 최근에 좋아요한 영상
-      query = query.orderBy(asc(likedVideos.likeOrder));
+      // 임시로 createdAt으로 정렬 (likeOrder 필드가 추가되기 전까지)
+      query = query.orderBy(desc(likedVideos.createdAt));
       
       // 필터 적용
       if (filter.channelId) {

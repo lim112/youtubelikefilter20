@@ -198,14 +198,17 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       let allVideos = response.data.items;
       let nextPageTokenValue = response.data.nextPageToken;
       
-      // 최대 5페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      // 최대 40페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
       if (req.query.refresh === 'true' && nextPageTokenValue) {
         try {
-          for (let i = 0; i < 4; i++) {  // 최대 4페이지 추가 (총 5페이지, 약 250개 영상)
+          for (let i = 0; i < 39; i++) {  // 최대 39페이지 추가 (첫 페이지 포함 총 40페이지, 약 2000개 영상)
             if (!nextPageTokenValue) break;
             
             const nextPageParams = { ...params, pageToken: nextPageTokenValue };
             const nextPageResponse = await youtube.videos.list(nextPageParams);
+            
+            // 진행 상황 로깅
+            console.log(`페이지 ${i+2}/${40} 로드 중... 현재 ${allVideos.length}개 영상`);
             
             if (nextPageResponse.data.items && nextPageResponse.data.items.length > 0) {
               allVideos = [...allVideos, ...nextPageResponse.data.items];
@@ -213,7 +216,11 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             } else {
               break;
             }
+            
+            // API 호출 제한을 방지하기 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
+          console.log(`총 ${allVideos.length}개 영상 로드 완료`);
         } catch (pageError) {
           console.error('추가 페이지 로딩 오류:', pageError);
           // 오류가 발생해도 이미 로드된 데이터는 계속 사용

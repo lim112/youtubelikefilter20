@@ -28,7 +28,7 @@ const likedVideos = pgTable('liked_videos', {
   duration: varchar('duration', { length: 50 }),
   viewCount: varchar('view_count', { length: 50 }),
   likeCount: varchar('like_count', { length: 50 }),
-  likeOrder: serial('like_order'),  // YouTube API 응답 순서 (좋아요 순서)
+  likeOrder: serial('like_order').default(0),  // YouTube API 응답 순서 (좋아요 순서)
   metadata: jsonb('metadata'),  // 추가 메타데이터 저장을 위한 필드
   createdAt: timestamp('created_at').defaultNow()
 });
