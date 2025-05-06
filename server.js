@@ -266,7 +266,29 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
           } catch (refreshError) {
             console.error('토큰 새로고침 오류:', refreshError);
             
-            // 새로고침 실패 시 기존 데이터 반환
+            // 새로고침 실패 시, 인증 오류가 있음을 사용자에게 알리고 기존 데이터 반환
+            if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+              // API 요청인 경우 JSON 응답
+              return res.json({
+                items: dbVideos,
+                pageInfo: {
+                  totalResults: dbVideos.length,
+                  resultsPerPage: limit
+                },
+                fromCache: true,
+                error: '인증 오류가 발생했습니다. 다시 로그인해주세요.'
+              });
+            } else {
+              // 일반 요청인 경우 리디렉션
+              req.logout(() => {
+                return res.redirect('/?auth_error=true');
+              });
+            }
+          }
+        } else {
+          // 기타 API 오류
+          if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            // API 요청인 경우 JSON 응답
             return res.json({
               items: dbVideos,
               pageInfo: {
@@ -274,20 +296,13 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
                 resultsPerPage: limit
               },
               fromCache: true,
-              error: '인증 오류가 발생했습니다. 다시 로그인해주세요.'
+              error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
             });
+          } else {
+            // 일반 요청인 경우 리디렉션 (API 오류 메시지와 함께)
+            const errorMsg = encodeURIComponent(apiError.message || '알 수 없는 오류');
+            return res.redirect(`/dashboard?api_error=${errorMsg}`);
           }
-        } else {
-          // 기타 API 오류
-          return res.json({
-            items: dbVideos,
-            pageInfo: {
-              totalResults: dbVideos.length,
-              resultsPerPage: limit
-            },
-            fromCache: true,
-            error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
-          });
         }
       }
       
