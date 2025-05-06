@@ -194,7 +194,13 @@ document.addEventListener('DOMContentLoaded', function() {
       allVideos = [...data.items];
       filteredVideos = [...data.items];
       
-      console.log(`페이지 ${currentPage}: ${data.items.length}개 항목 로드됨`);
+      // 페이지 정보 저장
+      totalVideos = data.pageInfo?.totalResults || allVideos.length;
+      const itemsPerPage = data.pageInfo?.resultsPerPage || 100;
+      const currentOffset = data.pageInfo?.currentOffset || 0;
+      
+      console.log(`페이지 ${currentPage}: ${data.items.length}개 항목 로드됨 (총 ${totalVideos}개 중)`);
+      console.log(`현재 오프셋: ${currentOffset}, 페이지당 항목 수: ${itemsPerPage}`);
       
       // 디버깅을 위해 페이지 토큰 정보 출력
       console.log('현재 페이지 토큰:', pageToken);
