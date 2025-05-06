@@ -309,10 +309,10 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       let allVideos = response.data.items || [];
       let nextPageTokenValue = response.data.nextPageToken;
       
-      // 최대 10페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      // 최대 400페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
       if ((req.query.refresh === 'true' || dbVideos.length === 0) && nextPageTokenValue) {
         try {
-          for (let i = 0; i < 9; i++) {  // 최대 9페이지 추가 (총 10페이지, 약 500개 영상)
+          for (let i = 0; i < 399; i++) {  // 최대 399페이지 추가 (총 400페이지, 약 20,000개 영상)
             if (!nextPageTokenValue) break;
             
             const nextPageParams = { ...params, pageToken: nextPageTokenValue };

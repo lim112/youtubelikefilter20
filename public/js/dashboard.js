@@ -417,18 +417,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
         return dateA - dateB; // 오름차순 (오래된순)
       }
-      else if (sortBy === 'likedAt') {
-        // 좋아요 날짜 기준 (최신순)
-        const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
-        const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
-        return likedAtB - likedAtA; // 내림차순 (최신순)
-      }
-      else if (sortBy === 'likedAtOldest') {
-        // 좋아요 날짜 기준 (오래된순)
-        const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
-        const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
-        return likedAtA - likedAtB; // 오름차순 (오래된순)
-      }
       else if (sortBy === 'viewCount') {
         // 조회수 기준 (내림차순)
         const viewCountA = parseInt(isYoutubeApiA ? (a.statistics?.viewCount || '0') : (a.viewCount || '0'));
@@ -555,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function exportToCsv() {
     // CSV 헤더
-    let csv = '제목,채널,게시일,조회수,URL\n';
+    let csv = '제목,채널,게시일,조회수,좋아요 수,영상 길이,URL\n';
     
     // 비디오 데이터 추가
     filteredVideos.forEach(video => {
@@ -576,10 +564,19 @@ document.addEventListener('DOMContentLoaded', function() {
         ? video.statistics?.viewCount || '0'
         : video.viewCount || '0';
       
+      const likeCount = isYoutubeApi
+        ? video.statistics?.likeCount || '0'
+        : video.likeCount || '0';
+      
+      let duration = '';
+      if ((isYoutubeApi && video.contentDetails?.duration) || (!isYoutubeApi && video.duration)) {
+        duration = formatDuration(isYoutubeApi ? video.contentDetails.duration : video.duration);
+      }
+      
       const videoId = isYoutubeApi ? video.id : video.videoId;
       const url = createYouTubeUrl(videoId);
       
-      csv += `${title},${channel},${publishedAt},${viewCount},${url}\n`;
+      csv += `${title},${channel},${publishedAt},${viewCount},${likeCount},${duration},${url}\n`;
     });
     
     // 다운로드 링크 생성
@@ -722,13 +719,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const publishDate = isYoutubeApi ? video.snippet.publishedAt : video.publishedAt;
     publishDateElem.innerHTML = `<span class="date-label">게시일:</span> ${formatDate(publishDate)}`;
     datesContainer.appendChild(publishDateElem);
-    
-    // 좋아요한 날짜
-    const likedDateElem = document.createElement('div');
-    likedDateElem.className = 'date-info';
-    const likedDate = isYoutubeApi ? (video.createdAt || video.snippet.publishedAt) : video.createdAt;
-    likedDateElem.innerHTML = `<span class="date-label">좋아요 날짜:</span> ${formatDate(likedDate)}`;
-    datesContainer.appendChild(likedDateElem);
     
     info.appendChild(datesContainer);
     
