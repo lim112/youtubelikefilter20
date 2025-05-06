@@ -1,4 +1,4 @@
-const { db } = require('./db');
+const { db, pool } = require('./db');
 const { users, likedVideos, playlists, playlistVideos, userSettings } = require('./shared/schema');
 const { eq, desc, asc, and, or, like, sql } = require('drizzle-orm');
 const connectPg = require('connect-pg-simple');
