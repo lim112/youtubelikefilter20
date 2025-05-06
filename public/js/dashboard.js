@@ -331,11 +331,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
         return dateB - dateA; // 내림차순 (최신순)
       } 
+      else if (sortBy === 'publishedAtOldest') {
+        // 영상 게시일 기준 (오래된순)
+        const dateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
+        const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
+        return dateA - dateB; // 오름차순 (오래된순)
+      }
       else if (sortBy === 'likedAt') {
         // 좋아요 날짜 기준 (최신순)
         const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
         const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
         return likedAtB - likedAtA; // 내림차순 (최신순)
+      }
+      else if (sortBy === 'likedAtOldest') {
+        // 좋아요 날짜 기준 (오래된순)
+        const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
+        const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
+        return likedAtA - likedAtB; // 오름차순 (오래된순)
       }
       else if (sortBy === 'viewCount') {
         // 조회수 기준 (내림차순)
