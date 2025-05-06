@@ -173,40 +173,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
     if (req.query.refresh === 'true' || dbVideos.length === 0) {
       // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.CLIENT_ID,
-        process.env.CLIENT_SECRET,
-        `${req.protocol}://${req.get('host')}/auth/google/callback`
-      );
-      
-      // 자동 토큰 갱신 설정
-      oauth2Client.on('tokens', async (tokens) => {
-        console.log('토큰 갱신됨');
-        // 액세스 토큰 업데이트
-        if (tokens.access_token) {
-          req.user.accessToken = tokens.access_token;
-        }
-        
-        // 리프레시 토큰이 제공되면 업데이트
-        if (tokens.refresh_token) {
-          req.user.refreshToken = tokens.refresh_token;
-        }
-        
-        // 데이터베이스 업데이트
-        try {
-          await storage.updateUser(req.user.id, {
-            accessToken: req.user.accessToken,
-            refreshToken: req.user.refreshToken
-          });
-        } catch (updateError) {
-          console.error('토큰 업데이트 실패:', updateError);
-        }
-      });
-      
-      // 액세스 토큰과 리프레시 토큰 모두 설정
+      const oauth2Client = new google.auth.OAuth2();
       oauth2Client.setCredentials({
-        access_token: req.user.accessToken,
-        refresh_token: req.user.refreshToken
+        access_token: req.user.accessToken
       });
       
       const youtube = google.youtube({
@@ -229,17 +198,14 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       let allVideos = response.data.items;
       let nextPageTokenValue = response.data.nextPageToken;
       
-      // 최대 40페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      // 최대 5페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
       if (req.query.refresh === 'true' && nextPageTokenValue) {
         try {
-          for (let i = 0; i < 39; i++) {  // 최대 39페이지 추가 (첫 페이지 포함 총 40페이지, 약 2000개 영상)
+          for (let i = 0; i < 4; i++) {  // 최대 4페이지 추가 (총 5페이지, 약 250개 영상)
             if (!nextPageTokenValue) break;
             
             const nextPageParams = { ...params, pageToken: nextPageTokenValue };
             const nextPageResponse = await youtube.videos.list(nextPageParams);
-            
-            // 진행 상황 로깅
-            console.log(`페이지 ${i+2}/${40} 로드 중... 현재 ${allVideos.length}개 영상`);
             
             if (nextPageResponse.data.items && nextPageResponse.data.items.length > 0) {
               allVideos = [...allVideos, ...nextPageResponse.data.items];
@@ -247,11 +213,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             } else {
               break;
             }
-            
-            // API 호출 제한을 방지하기 위한 짧은 지연
-            await new Promise(resolve => setTimeout(resolve, 100));
           }
-          console.log(`총 ${allVideos.length}개 영상 로드 완료`);
         } catch (pageError) {
           console.error('추가 페이지 로딩 오류:', pageError);
           // 오류가 발생해도 이미 로드된 데이터는 계속 사용
@@ -263,8 +225,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       
       // 데이터베이스에 저장
       const apiVideos = response.data.items;
-      for (let i = 0; i < apiVideos.length; i++) {
-        const video = apiVideos[i];
+      for (const video of apiVideos) {
         await storage.saveLikedVideo(req.user.id, {
           videoId: video.id,
           title: video.snippet.title,
@@ -282,7 +243,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             defaultLanguage: video.snippet.defaultLanguage,
             privacyStatus: video.status?.privacyStatus || 'public'
           }
-        }, i);
+        });
       }
       
       // 저장 후 필터링된 데이터 다시 가져오기
