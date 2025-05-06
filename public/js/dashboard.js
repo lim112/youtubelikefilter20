@@ -804,8 +804,20 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {string} message - 오류 메시지
    */
   function showError(message) {
-    errorText.textContent = message;
+    // HTML 태그 지원 (주의: XSS 공격 가능성이 있으므로 신뢰할 수 있는 소스의 메시지만 사용)
+    errorText.innerHTML = message;
     errorMessage.classList.remove('hidden');
+    
+    // 인증 관련 오류인 경우 도움말 섹션 표시
+    if (message.includes('인증 오류') || 
+        message.includes('로그인') || 
+        message.includes('권한') || 
+        message.includes('토큰') ||
+        message.includes('OAuth')) {
+      authErrorHelp.classList.remove('hidden');
+    } else {
+      authErrorHelp.classList.add('hidden');
+    }
   }
   
   /**
@@ -813,5 +825,6 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function hideError() {
     errorMessage.classList.add('hidden');
+    authErrorHelp.classList.add('hidden');
   }
 });
