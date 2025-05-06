@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 사용자 정보 가져오기
       await getUserInfo();
       
-      // 좋아요한 비디오 가져오기
-      await fetchLikedVideos();
+      // 좋아요한 비디오 가져오기 - refresh=true 파라미터로 최신 데이터를 가져옴
+      await fetchLikedVideos('', true);
       
       hideLoading();
     } catch (error) {
@@ -119,15 +119,26 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * 좋아요한 비디오 가져오기
    * @param {string} pageToken - 페이지 토큰
+   * @param {boolean} refresh - API에서 새 데이터를 가져올지 여부
    */
-  async function fetchLikedVideos(pageToken = '') {
+  async function fetchLikedVideos(pageToken = '', refresh = false) {
     isLoading = true;
     showLoading();
     
     try {
       let url = '/api/liked-videos';
+      const params = new URLSearchParams();
+      
       if (pageToken) {
-        url += `?pageToken=${pageToken}`;
+        params.append('pageToken', pageToken);
+      }
+      
+      if (refresh) {
+        params.append('refresh', 'true');
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
       }
       
       const response = await fetch(url);
@@ -416,8 +427,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 필터 초기화
     clearFilters();
     
-    // 비디오 다시 가져오기
-    await fetchLikedVideos();
+    // 비디오 다시 가져오기 - refresh=true 파라미터로 YouTube API에서 최신 데이터 가져오기
+    await fetchLikedVideos('', true);
   }
   
   /**

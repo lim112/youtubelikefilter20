@@ -193,7 +193,35 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
         params.pageToken = req.query.pageToken;
       }
 
+      // 첫 번째 페이지 결과 가져오기
       const response = await youtube.videos.list(params);
+      let allVideos = response.data.items;
+      let nextPageTokenValue = response.data.nextPageToken;
+      
+      // 최대 5페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      if (req.query.refresh === 'true' && nextPageTokenValue) {
+        try {
+          for (let i = 0; i < 4; i++) {  // 최대 4페이지 추가 (총 5페이지, 약 250개 영상)
+            if (!nextPageTokenValue) break;
+            
+            const nextPageParams = { ...params, pageToken: nextPageTokenValue };
+            const nextPageResponse = await youtube.videos.list(nextPageParams);
+            
+            if (nextPageResponse.data.items && nextPageResponse.data.items.length > 0) {
+              allVideos = [...allVideos, ...nextPageResponse.data.items];
+              nextPageTokenValue = nextPageResponse.data.nextPageToken;
+            } else {
+              break;
+            }
+          }
+        } catch (pageError) {
+          console.error('추가 페이지 로딩 오류:', pageError);
+          // 오류가 발생해도 이미 로드된 데이터는 계속 사용
+        }
+      }
+      
+      // 응답 객체 업데이트
+      response.data.items = allVideos;
       
       // 데이터베이스에 저장
       const apiVideos = response.data.items;

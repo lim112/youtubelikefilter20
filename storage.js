@@ -126,15 +126,18 @@ class Storage {
       const existingVideo = await this.getLikedVideoByVideoId(userId, videoData.videoId);
       
       if (existingVideo) {
-        // 업데이트
+        // 업데이트 - 단, createdAt 필드는 변경하지 않음 (좋아요 한 시점 보존)
+        // 좋아요 날짜로 사용되는 createdAt 필드를 업데이트 객체에서 제거
+        const { createdAt, ...dataToUpdate } = videoData;
+        
         const [updatedVideo] = await db
           .update(likedVideos)
-          .set(videoData)
+          .set(dataToUpdate)
           .where(eq(likedVideos.id, existingVideo.id))
           .returning();
         return updatedVideo;
       } else {
-        // 새로 저장
+        // 새로 저장 - 이 경우에는 현재 시간이 좋아요 한 시점으로 저장됨
         const [newVideo] = await db
           .insert(likedVideos)
           .values({...videoData, userId})
