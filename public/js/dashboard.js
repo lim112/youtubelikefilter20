@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // 사용자 정보 가져오기
       await getUserInfo();
       
-      // 정렬 옵션을 기본값으로 설정 (최신순)
-      sortFilter.value = 'createdAt';
+      // 정렬 옵션을 기본값으로 설정 (좋아요 날짜 최신순)
+      sortFilter.value = 'likedAt';
       
       // 좋아요한 비디오 가져오기 - refresh=true 파라미터로 최신 데이터를 가져옴
       await fetchLikedVideos('', true);
@@ -376,10 +376,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return likeCountB - likeCountA;
       }
       
-      // 기본값: 영상 게시일 기준
-      const defaultDateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
-      const defaultDateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
-      return defaultDateB - defaultDateA; // 내림차순 (최신순)
+      // 기본값: 좋아요한 날짜 기준 (최신순)
+      const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
+      const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
+      return likedAtB - likedAtA; // 내림차순 (최신순)
     });
   }
   
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
     channelSelect.value = '';
     dateFilter.value = '';
     durationFilter.value = '';
-    sortFilter.value = 'publishedAt'; // 정렬 옵션도 초기화 (기본값: 영상 게시일)
+    sortFilter.value = 'likedAt'; // 정렬 옵션도 초기화 (기본값: 좋아요한 날짜 최신순)
     
     // 모든 비디오 표시
     filteredVideos = [...allVideos];
