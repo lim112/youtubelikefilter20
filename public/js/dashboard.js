@@ -81,7 +81,11 @@ document.addEventListener('DOMContentLoaded', function() {
       // 사용자 정보 가져오기
       await getUserInfo();
       
-      // 좋아요한 비디오 가져오기 - refresh=true 파라미터로 최신 데이터를 가져옴
+      // 1. 먼저 메타데이터만 가져오기 (채널, 게시일, 영상 길이 정보)
+      await fetchMetadata();
+      
+      // 2. 그 다음 첫 페이지 비디오 데이터 가져오기 (썸네일 포함)
+      // 초기 로드에서는 refresh=true로 최신 데이터 가져오기
       await fetchLikedVideos('', true);
       
       hideLoading();
@@ -89,6 +93,48 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('초기화 오류:', error);
       showError('데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.');
       hideLoading();
+    }
+  }
+  
+  /**
+   * 메타데이터 가져오기 (채널, 게시일, 영상 길이 정보)
+   */
+  async function fetchMetadata() {
+    try {
+      console.log('메타데이터 가져오는 중...');
+      const response = await fetch('/api/videos/metadata');
+      
+      if (!response.ok) {
+        throw new Error('메타데이터 가져오기 실패');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.metadata) {
+        // 채널 정보 설정
+        if (data.metadata.channels && data.metadata.channels.length > 0) {
+          channels.clear();
+          data.metadata.channels.forEach(channel => {
+            channels.set(channel.channelId, {
+              title: channel.channelTitle,
+              videoCount: channel.videoCount
+            });
+          });
+          
+          // 채널 선택 드롭다운 업데이트
+          populateChannelSelect();
+        }
+        
+        // 총 비디오 개수 설정
+        if (data.metadata.totalVideos) {
+          totalVideos = data.metadata.totalVideos;
+        }
+        
+        console.log(`메타데이터 로드 완료: ${channels.size}개 채널, 총 ${totalVideos}개 비디오`);
+      }
+    } catch (error) {
+      console.error('메타데이터 가져오기 오류:', error);
+      // 메타데이터 가져오기 실패해도 계속 진행 (다른 부분에서 처리 가능)
     }
   }
   
@@ -142,8 +188,9 @@ document.addEventListener('DOMContentLoaded', function() {
    * 좋아요한 비디오 가져오기
    * @param {string} pageToken - 페이지 토큰
    * @param {boolean} refresh - API에서 새 데이터를 가져올지 여부
+   * @param {boolean} loadThumbnails - 썸네일 이미지를 가져올지 여부 (기본: true)
    */
-  async function fetchLikedVideos(pageToken = '', refresh = false) {
+  async function fetchLikedVideos(pageToken = '', refresh = false, loadThumbnails = true) {
     isLoading = true;
     showLoading();
     
@@ -157,6 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (refresh) {
         params.append('refresh', 'true');
+      }
+      
+      // 썸네일 로드 여부 설정
+      if (!loadThumbnails) {
+        params.append('loadThumbnails', 'false');
       }
       
       // 현재 선택된 필터 값 추가
@@ -411,14 +463,26 @@ document.addEventListener('DOMContentLoaded', function() {
       currentPage--;
       console.log(`이전 페이지로 이동: ${currentPage}페이지, 토큰=${prevPageToken}`);
       
-      // 이전 페이지로 이동 시 현재 필터 상태 유지
-      fetchLikedVideos(prevPageToken, false);
+      // 이전 페이지로 이동 시 현재 필터 상태 유지하고, 
+      // 처음에는 메타데이터만 로드하여 더 빠르게 표시 (썸네일 제외)
+      fetchLikedVideos(prevPageToken, false, false);
+      
+      // 메타데이터 로드 후 백그라운드에서 썸네일 포함하여 다시 로드
+      setTimeout(() => {
+        fetchLikedVideos(prevPageToken, false, true);
+      }, 1000);
     } else if (direction === 'next' && nextPageToken) {
       currentPage++;
       console.log(`다음 페이지로 이동: ${currentPage}페이지, 토큰=${nextPageToken}`);
       
-      // 다음 페이지로 이동 시 현재 필터 상태 유지
-      fetchLikedVideos(nextPageToken, false);
+      // 다음 페이지로 이동 시 현재 필터 상태 유지하고,
+      // 처음에는 메타데이터만 로드하여 더 빠르게 표시 (썸네일 제외)
+      fetchLikedVideos(nextPageToken, false, false);
+      
+      // 메타데이터 로드 후 백그라운드에서 썸네일 포함하여 다시 로드
+      setTimeout(() => {
+        fetchLikedVideos(nextPageToken, false, true);
+      }, 1000);
     }
   }
   

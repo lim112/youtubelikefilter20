@@ -145,6 +145,25 @@ app.get('/api/logout', (req, res) => {
   });
 });
 
+// 비디오 메타데이터 API (채널, 게시일, 영상 길이 정보만 가져옴)
+app.get('/api/videos/metadata', isAuthenticated, async (req, res) => {
+  try {
+    console.log('메타데이터 API 호출됨');
+    const metadata = await storage.getVideoMetadata(req.user.id);
+    
+    return res.json({
+      metadata,
+      success: true
+    });
+  } catch (error) {
+    console.error('메타데이터 API 오류:', error);
+    res.status(500).json({ 
+      error: '메타데이터를 가져오는데 실패했습니다', 
+      details: error.message 
+    });
+  }
+});
+
 // 대시보드 페이지
 app.get('/dashboard', (req, res) => {
   if (req.isAuthenticated()) {
@@ -195,8 +214,12 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       filter.sort = req.query.sort;
     }
     
+    // 썸네일 이미지 로드 여부 (기본: true)
+    // 메타데이터만 먼저 로드하려면 loadThumbnails=false 파라미터 사용
+    const loadThumbnails = req.query.loadThumbnails !== 'false';
+    
     // 로컬 데이터베이스에서 먼저, 필터가 없으면 모든 영상 반환
-    const dbVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter);
+    const dbVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter, loadThumbnails);
     
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
     if (req.query.refresh === 'true' || dbVideos.length === 0) {
@@ -390,7 +413,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       }
       
       // 저장 후 필터링된 데이터 다시 가져오기
-      const updatedVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter);
+      const updatedVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter, loadThumbnails);
       
       // 전체 비디오 개수 구하기
       const totalCount = await storage.countLikedVideos(req.user.id, filter);
