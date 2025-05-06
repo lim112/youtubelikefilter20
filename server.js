@@ -48,7 +48,7 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback",
+  callbackURL: `${process.env.REPLIT_URL}/auth/google/callback`,
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
   accessType: 'offline',  // 리프레시 토큰을 받기 위해 'offline' 설정
   prompt: 'consent'       // 사용자에게 항상 동의 요청하여 리프레시 토큰 발급받기
@@ -230,7 +230,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
-        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
+        `${process.env.REPLIT_URL}/auth/google/callback`
       );
       
       // 액세스 토큰 설정
@@ -507,7 +507,7 @@ async function loadRemainingPages(userId, params, nextPageToken, storage) {
     const oauth2Client = new google.auth.OAuth2(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
-      `${process.env.REDIRECT_URI || 'http://localhost:5000'}/auth/google/callback`
+      `${process.env.REPLIT_URL}/auth/google/callback`
     );
     
     // 인증된 클라이언트로 YouTube API 초기화
