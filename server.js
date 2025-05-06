@@ -49,7 +49,9 @@ passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
   callbackURL: "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback",
-  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly']
+  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
+  accessType: 'offline',  // 리프레시 토큰을 받기 위해 'offline' 설정
+  prompt: 'consent'       // 사용자에게 항상 동의 요청하여 리프레시 토큰 발급받기
 },
 async function(accessToken, refreshToken, profile, done) {
   try {
@@ -107,7 +109,9 @@ app.get('/', (req, res) => {
 
 // 인증 라우트
 app.get('/auth/google', passport.authenticate('google', { 
-  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly']
+  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
+  accessType: 'offline',
+  prompt: 'consent'
 }));
 
 app.get('/auth/google/callback', 
@@ -173,10 +177,41 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
     if (req.query.refresh === 'true' || dbVideos.length === 0) {
       // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
-      const oauth2Client = new google.auth.OAuth2();
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.CLIENT_ID,
+        process.env.CLIENT_SECRET,
+        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
+      );
+      
+      // 액세스 토큰 설정
       oauth2Client.setCredentials({
-        access_token: req.user.accessToken
+        access_token: req.user.accessToken,
+        refresh_token: req.user.refreshToken
       });
+      
+      // 토큰 갱신이 필요한 경우 새 토큰 발급
+      try {
+        const isTokenExpired = oauth2Client.isTokenExpiring();
+        if (isTokenExpired) {
+          console.log('토큰이 만료되었습니다. 토큰을 갱신합니다...');
+          const { credentials } = await oauth2Client.refreshAccessToken();
+          
+          // 새 액세스 토큰으로 사용자 정보 업데이트
+          await storage.updateUser(req.user.id, {
+            accessToken: credentials.access_token,
+            refreshToken: credentials.refresh_token || req.user.refreshToken
+          });
+          
+          req.user.accessToken = credentials.access_token;
+          if (credentials.refresh_token) {
+            req.user.refreshToken = credentials.refresh_token;
+          }
+          
+          console.log('토큰이 성공적으로 갱신되었습니다.');
+        }
+      } catch (tokenError) {
+        console.error('토큰 갱신 오류:', tokenError);
+      }
       
       const youtube = google.youtube({
         version: 'v3',
@@ -194,8 +229,69 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       }
 
       // 첫 번째 페이지 결과 가져오기
-      const response = await youtube.videos.list(params);
-      let allVideos = response.data.items;
+      let response;
+      try {
+        response = await youtube.videos.list(params);
+        console.log('YouTube API 응답 성공: 첫 번째 페이지');
+      } catch (apiError) {
+        console.error('YouTube API 오류:', apiError);
+        
+        // 인증 오류인 경우 토큰 문제일 수 있음
+        if (apiError.code === 401) {
+          try {
+            console.log('인증 오류로 토큰을 새로 고침합니다...');
+            const { credentials } = await oauth2Client.refreshAccessToken();
+            
+            // 새 토큰으로 사용자 정보 업데이트
+            await storage.updateUser(req.user.id, {
+              accessToken: credentials.access_token,
+              refreshToken: credentials.refresh_token || req.user.refreshToken
+            });
+            
+            // 세션 업데이트
+            req.user.accessToken = credentials.access_token;
+            if (credentials.refresh_token) {
+              req.user.refreshToken = credentials.refresh_token;
+            }
+            
+            // 새 토큰으로 다시 시도
+            oauth2Client.setCredentials({
+              access_token: req.user.accessToken,
+              refresh_token: req.user.refreshToken
+            });
+            
+            // 다시 API 호출
+            response = await youtube.videos.list(params);
+            console.log('토큰 새로고침 후 API 호출 성공');
+          } catch (refreshError) {
+            console.error('토큰 새로고침 오류:', refreshError);
+            
+            // 새로고침 실패 시 기존 데이터 반환
+            return res.json({
+              items: dbVideos,
+              pageInfo: {
+                totalResults: dbVideos.length,
+                resultsPerPage: limit
+              },
+              fromCache: true,
+              error: '인증 오류가 발생했습니다. 다시 로그인해주세요.'
+            });
+          }
+        } else {
+          // 기타 API 오류
+          return res.json({
+            items: dbVideos,
+            pageInfo: {
+              totalResults: dbVideos.length,
+              resultsPerPage: limit
+            },
+            fromCache: true,
+            error: `API 오류: ${apiError.message || '알 수 없는 오류'}`
+          });
+        }
+      }
+      
+      let allVideos = response.data.items || [];
       let nextPageTokenValue = response.data.nextPageToken;
       
       // 최대 10페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)

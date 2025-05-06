@@ -149,6 +149,24 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const data = await response.json();
       
+      // API 에러 메시지 확인
+      if (data.error) {
+        // 인증 오류인 경우
+        if (data.error.includes('인증 오류') || data.error.includes('로그인')) {
+          showError(data.error + ' 다시 로그인해주세요.');
+          
+          // 3초 후 로그인 페이지로 리디렉션
+          setTimeout(() => {
+            window.location.href = '/auth/google';
+          }, 3000);
+          
+          return;
+        } else {
+          // 기타 API 오류
+          showError(data.error);
+        }
+      }
+      
       // 비디오 데이터 저장
       if (pageToken === '') {
         // 첫 페이지인 경우 모든 비디오 초기화
