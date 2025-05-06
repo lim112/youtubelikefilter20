@@ -48,7 +48,7 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL,
+  callbackURL: "/auth/google/callback",
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly']
 },
 async function(accessToken, refreshToken, profile, done) {
@@ -489,6 +489,7 @@ app.put('/api/settings', isAuthenticated, async (req, res) => {
 });
 
 // 서버 시작
-app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
+  console.log(`Replit 환경에서 접속 가능한 주소: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
 });
