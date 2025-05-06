@@ -171,9 +171,15 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
     if (req.query.refresh === 'true' || dbVideos.length === 0) {
+      // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({
+        access_token: req.user.accessToken
+      });
+      
       const youtube = google.youtube({
         version: 'v3',
-        auth: req.user.accessToken
+        auth: oauth2Client
       });
 
       const params = {
