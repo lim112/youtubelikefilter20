@@ -193,6 +193,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     // 필터링 매개변수
     const filter = {}; // 기본적으로 필터 없음
     
+    // 요청 로그 출력
+    console.log(`DB 조회 요청: page=${Math.floor(offset/pageSize) + 1}, offset=${offset}, limit=${limit}`);
+    
     // 필터 매개변수가 있는 경우에만 적용
     if (req.query.channel) {
       filter.channelId = req.query.channel;

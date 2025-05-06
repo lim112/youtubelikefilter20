@@ -463,26 +463,22 @@ document.addEventListener('DOMContentLoaded', function() {
       currentPage--;
       console.log(`이전 페이지로 이동: ${currentPage}페이지, 토큰=${prevPageToken}`);
       
-      // 이전 페이지로 이동 시 현재 필터 상태 유지하고, 
-      // 처음에는 메타데이터만 로드하여 더 빠르게 표시 (썸네일 제외)
-      fetchLikedVideos(prevPageToken, false, false);
+      // 페이지 변경 전에 오류 메시지 숨기기
+      hideError();
       
-      // 메타데이터 로드 후 백그라운드에서 썸네일 포함하여 다시 로드
-      setTimeout(() => {
-        fetchLikedVideos(prevPageToken, false, true);
-      }, 1000);
+      // 이전 페이지로 이동 시 통합 요청 방식으로 변경
+      // 백그라운드 로드 방식은 일시적으로 제거하고 안정적인 단일 요청으로 수정
+      fetchLikedVideos(prevPageToken, false, true);
     } else if (direction === 'next' && nextPageToken) {
       currentPage++;
       console.log(`다음 페이지로 이동: ${currentPage}페이지, 토큰=${nextPageToken}`);
       
-      // 다음 페이지로 이동 시 현재 필터 상태 유지하고,
-      // 처음에는 메타데이터만 로드하여 더 빠르게 표시 (썸네일 제외)
-      fetchLikedVideos(nextPageToken, false, false);
+      // 페이지 변경 전에 오류 메시지 숨기기
+      hideError();
       
-      // 메타데이터 로드 후 백그라운드에서 썸네일 포함하여 다시 로드
-      setTimeout(() => {
-        fetchLikedVideos(nextPageToken, false, true);
-      }, 1000);
+      // 다음 페이지로 이동 시 통합 요청 방식으로 변경
+      // 백그라운드 로드 방식은 일시적으로 제거하고 안정적인 단일 요청으로 수정
+      fetchLikedVideos(nextPageToken, false, true);
     }
   }
   

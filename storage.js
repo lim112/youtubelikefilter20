@@ -185,16 +185,19 @@ class Storage {
       console.log(`사용자 ${userId}의 비디오 메타데이터 로드 중...`);
       
       // 1. 채널 정보 가져오기
-      const channels = await db
-        .selectDistinct({
-          channelId: likedVideos.channelId,
-          channelTitle: likedVideos.channelTitle,
-          videoCount: sql`COUNT(${likedVideos.id})::int`
-        })
-        .from(likedVideos)
-        .where(eq(likedVideos.userId, userId))
-        .groupBy(likedVideos.channelId, likedVideos.channelTitle)
-        .orderBy(desc(sql`COUNT(${likedVideos.id})`)); // 영상이 많은 채널 순으로 정렬
+      const query = `
+        SELECT 
+          channel_id AS "channelId", 
+          channel_title AS "channelTitle", 
+          COUNT(*) AS "videoCount"
+        FROM liked_videos
+        WHERE user_id = $1
+        GROUP BY channel_id, channel_title
+        ORDER BY "videoCount" DESC
+      `;
+      
+      const channelsResult = await pool.query(query, [userId]);
+      const channels = channelsResult.rows;
       
       console.log(`${channels.length}개 채널 메타데이터 로드됨`);
       
