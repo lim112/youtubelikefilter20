@@ -49,6 +49,7 @@ passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
   callbackURL: "/auth/google/callback",
+  proxy: true,
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly']
 },
 async function(accessToken, refreshToken, profile, done) {
@@ -106,9 +107,15 @@ app.get('/', (req, res) => {
 });
 
 // 인증 라우트
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'] })
-);
+app.get('/auth/google', (req, res, next) => {
+  // 실제 사용되는 리디렉션 URI 기록
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const callbackUrl = `${protocol}://${host}/auth/google/callback`;
+  console.log('리디렉션 URI:', callbackUrl);
+  
+  next();
+}, passport.authenticate('google', { scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'] }));
 
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
