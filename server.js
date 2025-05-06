@@ -221,7 +221,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       const params = {
         part: 'snippet,contentDetails,statistics',
         myRating: 'like',
-        maxResults: 50 // YouTube API는 한 번에 최대 50개만 지원
+        maxResults: 100 // 페이지당 100개 항목으로 설정
       };
 
       if (req.query.pageToken) {
@@ -412,9 +412,16 @@ async function loadRemainingPages(userId, params, nextPageToken, storage) {
     
     // 인증된 클라이언트로 YouTube API 초기화
     const user = await storage.getUserById(userId);
+    
+    // 사용자 객체 구조 확인 및 토큰 접근
+    if (!user || !user.accessToken) {
+      console.error('사용자 인증 정보가 누락되었습니다:', user);
+      throw new Error('사용자 인증 정보가 누락되었습니다');
+    }
+    
     oauth2Client.setCredentials({
-      access_token: user.tokens.accessToken,
-      refresh_token: user.tokens.refreshToken
+      access_token: user.accessToken,
+      refresh_token: user.refreshToken
     });
     
     const youtube = google.youtube({
