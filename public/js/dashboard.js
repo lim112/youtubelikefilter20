@@ -410,10 +410,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (direction === 'prev' && prevPageToken) {
       currentPage--;
       console.log(`이전 페이지로 이동: ${currentPage}페이지, 토큰=${prevPageToken}`);
+      
+      // 이전 페이지로 이동 시 현재 필터 상태 유지
       fetchLikedVideos(prevPageToken, false);
     } else if (direction === 'next' && nextPageToken) {
       currentPage++;
       console.log(`다음 페이지로 이동: ${currentPage}페이지, 토큰=${nextPageToken}`);
+      
+      // 다음 페이지로 이동 시 현재 필터 상태 유지
       fetchLikedVideos(nextPageToken, false);
     }
   }

@@ -164,8 +164,11 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     
     // 페이지 토큰이 있으면 해당 값을 offset으로 사용
     if (req.query.pageToken) {
-      offset = parseInt(req.query.pageToken);
-      console.log(`페이지 토큰으로 offset 설정: ${offset}`);
+      const tokenValue = req.query.pageToken;
+      if (tokenValue && !isNaN(parseInt(tokenValue))) {
+        offset = parseInt(tokenValue);
+        console.log(`페이지 토큰으로 offset 설정: ${offset}`);
+      }
     }
     
     // 필터링 매개변수
