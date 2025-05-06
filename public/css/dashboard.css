@@ -26,13 +26,8 @@
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-#user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  font-weight: 500;
+  padding: 0 10px;
 }
 
 .dashboard-content {

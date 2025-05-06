@@ -2,7 +2,6 @@
 
 document.addEventListener('DOMContentLoaded', function() {
   // 요소 가져오기
-  const userAvatar = document.getElementById('user-avatar');
   const userName = document.getElementById('user-name');
   const logoutBtn = document.getElementById('logout-btn');
   const searchInput = document.getElementById('search-input');
@@ -96,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     currentUser = data.user;
-    userAvatar.src = currentUser.photo;
     userName.textContent = currentUser.displayName;
   }
   
