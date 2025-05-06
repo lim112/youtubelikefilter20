@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentUser = null;
   let allVideos = [];
   let filteredVideos = [];
+  let totalVideos = 0; // 총 비디오 개수
   let currentPageToken = '';
   let nextPageToken = '';
   let prevPageToken = '';
@@ -522,16 +523,16 @@ document.addEventListener('DOMContentLoaded', function() {
     prevPageBtn.disabled = !prevPageToken;
     nextPageBtn.disabled = !nextPageToken;
     
-    // 총 항목 수와 현재 표시 중인 범위를 계산 (있는 경우)
-    const totalItems = filteredVideos.length;
+    // 총 항목 수와 현재 표시 중인 범위를 계산
+    const itemsPerPage = filteredVideos.length;
     let paginationStatus = '';
     
-    if (totalItems > 0) {
+    if (itemsPerPage > 0) {
       const start = (currentPage - 1) * 100 + 1;
-      const end = Math.min(start + filteredVideos.length - 1, totalItems);
-      paginationStatus = `${formatNumber(start)}-${formatNumber(end)} / ${formatNumber(totalItems)}개 항목`;
+      const end = start + itemsPerPage - 1;
+      paginationStatus = `${formatNumber(start)}-${formatNumber(end)} / 총 ${formatNumber(totalVideos)}개 항목`;
     } else {
-      paginationStatus = '항목 없음';
+      paginationStatus = `0 / 총 ${formatNumber(totalVideos)}개 항목`;
     }
     
     // 페이지네이션 상태 정보 업데이트
@@ -541,10 +542,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 페이지네이션 표시/숨김
-    if (!prevPageToken && !nextPageToken && filteredVideos.length < 100) {
-      document.getElementById('pagination').classList.add('hidden');
+    const paginationElement = document.getElementById('pagination');
+    if (totalVideos <= 0) {
+      paginationElement.style.display = 'none';
     } else {
-      document.getElementById('pagination').classList.remove('hidden');
+      paginationElement.style.display = 'flex';
     }
   }
   
