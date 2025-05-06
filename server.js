@@ -173,9 +173,40 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
     if (req.query.refresh === 'true' || dbVideos.length === 0) {
       // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
-      const oauth2Client = new google.auth.OAuth2();
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.CLIENT_ID,
+        process.env.CLIENT_SECRET,
+        `${req.protocol}://${req.get('host')}/auth/google/callback`
+      );
+      
+      // 자동 토큰 갱신 설정
+      oauth2Client.on('tokens', async (tokens) => {
+        console.log('토큰 갱신됨');
+        // 액세스 토큰 업데이트
+        if (tokens.access_token) {
+          req.user.accessToken = tokens.access_token;
+        }
+        
+        // 리프레시 토큰이 제공되면 업데이트
+        if (tokens.refresh_token) {
+          req.user.refreshToken = tokens.refresh_token;
+        }
+        
+        // 데이터베이스 업데이트
+        try {
+          await storage.updateUser(req.user.id, {
+            accessToken: req.user.accessToken,
+            refreshToken: req.user.refreshToken
+          });
+        } catch (updateError) {
+          console.error('토큰 업데이트 실패:', updateError);
+        }
+      });
+      
+      // 액세스 토큰과 리프레시 토큰 모두 설정
       oauth2Client.setCredentials({
-        access_token: req.user.accessToken
+        access_token: req.user.accessToken,
+        refresh_token: req.user.refreshToken
       });
       
       const youtube = google.youtube({
