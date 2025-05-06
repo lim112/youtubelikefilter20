@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF0000" />
+      <stop offset="100%" stop-color="#990000" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="48" height="48" rx="8" fill="white" />
+  
+  <!-- YouTube Player -->
+  <rect x="5" y="12" width="38" height="24" rx="4" fill="url(#gradient)" />
+  <polygon points="20,28 20,20 28,24" fill="white" />
+  
+  <!-- Play buttons -->
+  <rect x="10" y="39" width="28" height="2" rx="1" fill="#333" />
+  <rect x="16" y="43" width="16" height="2" rx="1" fill="#333" />
+  
+  <!-- Heart icon for "liked" -->
+  <circle cx="36" cy="9" r="5" fill="#FF0000" stroke="white" stroke-width="1" />
+  <path d="M33.5,8.5l2.5,2.5l2.5,-2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M33.5,8.5c0,-1.5 1,-2.5 2.5,-2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M38.5,8.5c0,-1.5 -1,-2.5 -2.5,-2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  
+  <!-- Filter icon -->
+  <circle cx="12" cy="9" r="5" fill="#4285F4" stroke="white" stroke-width="1" />
+  <path d="M9.5,7.5h5M10.5,9.5h3M11.5,11.5h1" stroke="white" stroke-width="1.2" stroke-linecap="round" />
+</svg>

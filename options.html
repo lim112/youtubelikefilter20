@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Liked Videos Filter - Options</title>
+  <link rel="stylesheet" href="options.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <i class="fab fa-youtube"></i>
+        YouTube Liked Videos Filter
+      </h1>
+      <p class="subtitle">Options and Settings</p>
+    </header>
+    
+    <section class="card" id="auth-section">
+      <h2>Authentication</h2>
+      <div class="auth-status">
+        <p>Status: <span id="auth-status-text">Checking...</span></p>
+        <div id="user-profile" class="user-profile hidden">
+          <img id="user-avatar" src="" alt="User Avatar">
+          <div class="user-details">
+            <span id="user-name"></span>
+            <span id="user-email"></span>
+          </div>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="login-button" class="primary-button hidden">
+          <i class="fab fa-google"></i> Sign in with Google
+        </button>
+        <button id="logout-button" class="secondary-button hidden">
+          <i class="fas fa-sign-out-alt"></i> Sign Out
+        </button>
+      </div>
+    </section>
+    
+    <section class="card">
+      <h2>Display Settings</h2>
+      <div class="setting-group">
+        <label for="results-per-page">Results per page:</label>
+        <select id="results-per-page">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+          <option value="40">40</option>
+          <option value="50" selected>50 (Maximum)</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="show-descriptions" checked>
+          Show video descriptions in results
+        </label>
+      </div>
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="auto-refresh" checked>
+          Auto-refresh data when opening popup
+        </label>
+      </div>
+    </section>
+    
+    <section class="card">
+      <h2>Data Management</h2>
+      <p>Clear saved data to free up space or fix issues with the extension.</p>
+      <div class="button-group">
+        <button id="clear-cache-button" class="warning-button">
+          <i class="fas fa-trash-alt"></i> Clear Cache
+        </button>
+        <button id="export-data-button" class="secondary-button">
+          <i class="fas fa-file-export"></i> Export Liked Videos
+        </button>
+      </div>
+    </section>
+    
+    <section class="card" id="about-section">
+      <h2>About</h2>
+      <p>
+        YouTube Liked Videos Filter helps you easily find videos you've liked by filtering them
+        by channel and keywords.
+      </p>
+      <p>
+        <strong>Version:</strong> 1.0<br>
+        <strong>Author:</strong> Your Name
+      </p>
+      <div class="links">
+        <a href="https://github.com/yourusername/youtube-liked-videos-filter" target="_blank">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+        <a href="https://chrome.google.com/webstore/detail/youtube-liked-videos-filter/extensionid" target="_blank">
+          <i class="fas fa-star"></i> Rate Extension
+        </a>
+        <a href="mailto:your.email@example.com" target="_blank">
+          <i class="fas fa-envelope"></i> Contact
+        </a>
+      </div>
+    </section>
+    
+    <footer>
+      <p>&copy; 2023 YouTube Liked Videos Filter</p>
+      <p>
+        This extension is not affiliated with or endorsed by YouTube or Google.
+      </p>
+    </footer>
+  </div>
+  
+  <script src="utils.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
