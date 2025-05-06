@@ -58,7 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
   tryLoginBtn.addEventListener('click', () => window.location.href = '/auth/google');
   sortFilter.addEventListener('change', function() {
     applySorting();
-    displayVideos(filteredVideos);
   });
   
   // 뷰 모드 변경 이벤트
@@ -158,6 +157,33 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (refresh) {
         params.append('refresh', 'true');
+      }
+      
+      // 현재 선택된 필터 값 추가
+      const searchTerm = searchInput.value.trim();
+      const selectedChannel = channelSelect.value;
+      const selectedDate = dateFilter.value;
+      const selectedDuration = durationFilter.value;
+      const selectedSort = sortFilter.value;
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      if (selectedChannel) {
+        params.append('channel', selectedChannel);
+      }
+      
+      if (selectedDate) {
+        params.append('date', selectedDate);
+      }
+      
+      if (selectedDuration) {
+        params.append('duration', selectedDuration);
+      }
+      
+      if (selectedSort) {
+        params.append('sort', selectedSort);
       }
       
       if (params.toString()) {
@@ -321,128 +347,19 @@ document.addEventListener('DOMContentLoaded', function() {
    * 필터 적용
    */
   function applyFilters() {
-    const searchTerm = searchInput.value.trim().toLowerCase();
-    const selectedChannel = channelSelect.value;
-    const selectedDate = dateFilter.value;
-    const selectedDuration = durationFilter.value;
-    
-    // 모든 비디오 중 필터링
-    filteredVideos = allVideos.filter(video => {
-      const isYoutubeApi = video.snippet !== undefined;
-      
-      // 제목 검색
-      const title = isYoutubeApi ? video.snippet.title.toLowerCase() : video.title.toLowerCase();
-      const description = isYoutubeApi 
-        ? video.snippet.description.toLowerCase() 
-        : (video.description ? video.description.toLowerCase() : '');
-      const matchesSearch = !searchTerm || 
-                           title.includes(searchTerm) || 
-                           description.includes(searchTerm);
-      
-      // 채널 필터링
-      const videoChannelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
-      const matchesChannel = !selectedChannel || videoChannelId === selectedChannel;
-      
-      // 날짜 필터링
-      const publishedAt = new Date(isYoutubeApi ? video.snippet.publishedAt : video.publishedAt);
-      const now = new Date();
-      let matchesDate = true;
-      
-      if (selectedDate === 'day') {
-        const oneDayAgo = new Date(now.setDate(now.getDate() - 1));
-        matchesDate = publishedAt >= oneDayAgo;
-      } else if (selectedDate === 'week') {
-        const oneWeekAgo = new Date(now.setDate(now.getDate() - 7));
-        matchesDate = publishedAt >= oneWeekAgo;
-      } else if (selectedDate === 'month') {
-        const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
-        matchesDate = publishedAt >= oneMonthAgo;
-      } else if (selectedDate === 'year') {
-        const oneYearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
-        matchesDate = publishedAt >= oneYearAgo;
-      }
-      
-      // 영상 길이 필터링
-      let matchesDuration = true;
-      
-      if (selectedDuration) {
-        let durationString;
-        if (isYoutubeApi && video.contentDetails?.duration) {
-          durationString = video.contentDetails.duration;
-        } else if (!isYoutubeApi && video.duration) {
-          durationString = video.duration;
-        }
-        
-        if (durationString) {
-          const durationInSeconds = parseDuration(durationString);
-          
-          if (selectedDuration === 'short') {
-            matchesDuration = durationInSeconds < 240; // 4분 미만
-          } else if (selectedDuration === 'medium') {
-            matchesDuration = durationInSeconds >= 240 && durationInSeconds <= 1200; // 4-20분
-          } else if (selectedDuration === 'long') {
-            matchesDuration = durationInSeconds > 1200; // 20분 초과
-          }
-        }
-      }
-      
-      return matchesSearch && matchesChannel && matchesDate && matchesDuration;
-    });
-    
-    // 정렬 적용
-    applySorting();
-    
-    // 필터링된 결과 표시
-    displayVideos(filteredVideos);
-    
-    // 결과가 없는 경우
-    if (filteredVideos.length === 0) {
-      showEmptyState();
-    } else {
-      hideEmptyState();
-    }
+    // 클라이언트 측 필터링 대신 서버에 필터 파라미터와 함께 요청
+    // 현재 페이지를 1로 재설정하고 필터가 적용된 첫 페이지를 가져옴
+    currentPage = 1;
+    fetchLikedVideos('', false);
   }
   
   /**
    * 정렬 적용 함수
    */
   function applySorting() {
-    const sortBy = sortFilter.value;
-    
-    filteredVideos.sort((a, b) => {
-      const isYoutubeApiA = a.snippet !== undefined;
-      const isYoutubeApiB = b.snippet !== undefined;
-      
-      if (sortBy === 'publishedAt') {
-        // 영상 게시일 기준 (최신순)
-        const dateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
-        const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
-        return dateB - dateA; // 내림차순 (최신순)
-      } 
-      else if (sortBy === 'publishedAtOldest') {
-        // 영상 게시일 기준 (오래된순)
-        const dateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
-        const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
-        return dateA - dateB; // 오름차순 (오래된순)
-      }
-      else if (sortBy === 'viewCount') {
-        // 조회수 기준 (내림차순)
-        const viewCountA = parseInt(isYoutubeApiA ? (a.statistics?.viewCount || '0') : (a.viewCount || '0'));
-        const viewCountB = parseInt(isYoutubeApiB ? (b.statistics?.viewCount || '0') : (b.viewCount || '0'));
-        return viewCountB - viewCountA;
-      }
-      else if (sortBy === 'likeCount') {
-        // 좋아요 기준 (내림차순)
-        const likeCountA = parseInt(isYoutubeApiA ? (a.statistics?.likeCount || '0') : (a.likeCount || '0'));
-        const likeCountB = parseInt(isYoutubeApiB ? (b.statistics?.likeCount || '0') : (b.likeCount || '0'));
-        return likeCountB - likeCountA;
-      }
-      
-      // 기본값: 영상 게시일 기준
-      const defaultDateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
-      const defaultDateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
-      return defaultDateB - defaultDateA; // 내림차순 (최신순)
-    });
+    // 정렬 값이 변경되면 서버에 해당 정렬과 함께 요청
+    currentPage = 1; // 정렬을 변경할 때도 페이지를 1로 재설정
+    fetchLikedVideos('', false);
   }
   
   /**
@@ -472,17 +389,9 @@ document.addEventListener('DOMContentLoaded', function() {
     durationFilter.value = '';
     sortFilter.value = 'publishedAt'; // 정렬 옵션도 초기화 (기본값: 영상 게시일)
     
-    // 모든 비디오 표시
-    filteredVideos = [...allVideos];
-    applySorting(); // 정렬 적용
-    displayVideos(filteredVideos);
-    
-    // 결과가 없는 경우
-    if (filteredVideos.length === 0) {
-      showEmptyState();
-    } else {
-      hideEmptyState();
-    }
+    // 서버에 필터가 없는 상태로 요청하기 위해 페이지를 1로 재설정하고 다시 가져옴
+    currentPage = 1;
+    fetchLikedVideos('', false);
   }
   
   /**
