@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const emptyState = document.getElementById('empty-state');
   const errorMessage = document.getElementById('error-message');
   const errorText = document.getElementById('error-text');
+  const authErrorHelp = document.getElementById('auth-error-help');
+  const tryLoginBtn = document.getElementById('try-login-btn');
   const prevPageBtn = document.getElementById('prev-page');
   const nextPageBtn = document.getElementById('next-page');
   const pageInfo = document.getElementById('page-info');
@@ -52,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
   nextPageBtn.addEventListener('click', () => changePage('next'));
   exportCsvBtn.addEventListener('click', () => exportData('csv'));
   exportJsonBtn.addEventListener('click', () => exportData('json'));
+  tryLoginBtn.addEventListener('click', () => window.location.href = '/auth/google');
   sortFilter.addEventListener('change', function() {
     applySorting();
     displayVideos(filteredVideos);
@@ -71,6 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
   async function initialize() {
     showLoading();
     
+    // URL 파라미터에서 API 오류 확인
+    checkApiError();
+    
     try {
       // 사용자 정보 가져오기
       await getUserInfo();
@@ -83,6 +89,22 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('초기화 오류:', error);
       showError('데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.');
       hideLoading();
+    }
+  }
+  
+  /**
+   * API 오류 확인 함수
+   */
+  function checkApiError() {
+    // URL 파라미터에서 api_error 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiError = urlParams.get('api_error');
+    
+    if (apiError) {
+      showError(`API 오류: ${decodeURIComponent(apiError)}<br>서버에 저장된 데이터를 표시합니다.`);
+      
+      // URL에서 파라미터 제거 (오류 메시지가 계속 표시되는 것 방지)
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }
   

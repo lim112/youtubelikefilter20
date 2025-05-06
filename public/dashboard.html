@@ -117,6 +117,17 @@
         <div id="error-message" class="error-message hidden">
           <i class="fas fa-exclamation-circle"></i>
           <p id="error-text"></p>
+          <div id="auth-error-help" class="hidden" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <p><strong>인증 오류가 계속되는 경우:</strong></p>
+            <ol style="margin-left: 20px; text-align: left;">
+              <li>다시 로그인을 시도하세요.</li>
+              <li>로그인을 할 때 '모든 항목 보기' 버튼을 클릭하고, 'YouTube 데이터 API 읽기 전용 권한'에 동의해주세요.</li>
+              <li>인증 페이지에서 계정을 선택할 때 YouTube와 연결된 구글 계정을 사용하세요.</li>
+            </ol>
+            <p style="margin-top: 10px; text-align: center;">
+              <button id="try-login-btn" class="btn primary">다시 로그인하기</button>
+            </p>
+          </div>
         </div>
         
         <div class="pagination" id="pagination">
