@@ -191,9 +191,38 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (error) {
       console.error('비디오 가져오기 오류:', error);
-      showError('좋아요한 영상을 가져오는 중 오류가 발생했습니다. 다시 시도해주세요.');
+      
+      let errorMessage = '좋아요한 영상을 가져오는 중 오류가 발생했습니다.';
+      
+      try {
+        // API 에러 응답이 있는지 확인
+        if (error.message && error.message.includes('API 오류:')) {
+          errorMessage += ` (${error.message})`;
+        }
+        
+        // 네트워크 오류인 경우
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = '서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+        }
+      } catch (e) {
+        // 오류 처리 중 추가 오류 발생 시 기본 메시지만 표시
+      }
+      
+      showError(errorMessage);
       isLoading = false;
       hideLoading();
+      
+      // 에러 발생 시에도 저장된 데이터가 있으면 표시
+      if (allVideos.length > 0) {
+        // 정렬 적용
+        applySorting();
+        // 비디오 표시
+        displayVideos(filteredVideos);
+        // Empty 상태 숨기기
+        hideEmptyState();
+      } else {
+        showEmptyState();
+      }
     }
   }
   

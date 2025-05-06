@@ -154,7 +154,7 @@ app.get('/dashboard', (req, res) => {
 app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
   try {
     // 페이지네이션 및 필터링 매개변수
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = parseInt(req.query.limit) || 1000; // 대부분의 사용자가 1000개 이상의 좋아요를 누르지 않으므로 충분히 큰 값 설정
     const offset = parseInt(req.query.offset) || 0;
     const filter = {}; // 기본적으로 필터 없음
     
@@ -186,7 +186,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       const params = {
         part: 'snippet,contentDetails,statistics',
         myRating: 'like',
-        maxResults: 50
+        maxResults: 50 // YouTube API는 한 번에 최대 50개만 지원
       };
 
       if (req.query.pageToken) {
@@ -198,10 +198,10 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       let allVideos = response.data.items;
       let nextPageTokenValue = response.data.nextPageToken;
       
-      // 최대 5페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
-      if (req.query.refresh === 'true' && nextPageTokenValue) {
+      // 최대 10페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      if ((req.query.refresh === 'true' || dbVideos.length === 0) && nextPageTokenValue) {
         try {
-          for (let i = 0; i < 4; i++) {  // 최대 4페이지 추가 (총 5페이지, 약 250개 영상)
+          for (let i = 0; i < 9; i++) {  // 최대 9페이지 추가 (총 10페이지, 약 500개 영상)
             if (!nextPageTokenValue) break;
             
             const nextPageParams = { ...params, pageToken: nextPageTokenValue };
