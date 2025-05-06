@@ -190,15 +190,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // 비디오 데이터 저장
-      if (pageToken === '') {
-        // 첫 페이지인 경우 모든 비디오 초기화
-        allVideos = [...data.items];
-        filteredVideos = [...data.items];
-      } else {
-        // 페이지 이동인 경우 비디오 추가
-        allVideos = [...data.items];
-        filteredVideos = [...data.items];
-      }
+      // 페이지와 상관없이 항상 현재 페이지의 데이터만 표시
+      allVideos = [...data.items];
+      filteredVideos = [...data.items];
+      
+      console.log(`페이지 ${currentPage}: ${data.items.length}개 항목 로드됨`);
+      
+      // 디버깅을 위해 페이지 토큰 정보 출력
+      console.log('현재 페이지 토큰:', pageToken);
+      console.log('다음 페이지 토큰:', data.nextPageToken);
+      console.log('이전 페이지 토큰:', data.prevPageToken);
       
       // 페이지 토큰 저장
       nextPageToken = data.nextPageToken || '';
