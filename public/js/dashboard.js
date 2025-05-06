@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // 사용자 정보 가져오기
       await getUserInfo();
       
+      // 정렬 옵션을 기본값으로 설정 (최신순)
+      sortFilter.value = 'createdAt';
+      
       // 좋아요한 비디오 가져오기 - refresh=true 파라미터로 최신 데이터를 가져옴
       await fetchLikedVideos('', true);
       
