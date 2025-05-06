@@ -309,52 +309,30 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       let allVideos = response.data.items || [];
       let nextPageTokenValue = response.data.nextPageToken;
       
-      // 최대 400페이지까지 추가 데이터 가져오기 (refresh=true인 경우에만)
+      // 첫 페이지만 먼저 로드하고, 나머지는 백그라운드에서 비동기적으로 로드
       if ((req.query.refresh === 'true' || dbVideos.length === 0) && nextPageTokenValue) {
-        try {
-          for (let i = 0; i < 399; i++) {  // 최대 399페이지 추가 (총 400페이지, 약 20,000개 영상)
-            if (!nextPageTokenValue) break;
-            
-            const nextPageParams = { ...params, pageToken: nextPageTokenValue };
-            const nextPageResponse = await youtube.videos.list(nextPageParams);
-            
-            if (nextPageResponse.data.items && nextPageResponse.data.items.length > 0) {
-              allVideos = [...allVideos, ...nextPageResponse.data.items];
-              nextPageTokenValue = nextPageResponse.data.nextPageToken;
-            } else {
-              break;
-            }
-          }
-        } catch (pageError) {
-          console.error('추가 페이지 로딩 오류:', pageError);
-          // 오류가 발생해도 이미 로드된 데이터는 계속 사용
-        }
+        // 첫 페이지 데이터는 이미 로드되었으므로, 첫 페이지 데이터 저장
+        const firstPageVideos = [...allVideos];
+        
+        // 첫 페이지 데이터를 데이터베이스에 저장
+        await saveVideosToDatabase(req.user.id, firstPageVideos, storage);
+        
+        // 먼저 첫 페이지 데이터만 응답 준비
+        const firstPageResponse = { ...response };
+        firstPageResponse.data.items = firstPageVideos;
+        
+        // 첫 페이지 데이터로 응답 객체 업데이트
+        response = firstPageResponse;
+        
+        // 백그라운드에서 나머지 페이지 로드 작업 시작 (비동기적으로 실행)
+        loadRemainingPages(req.user.id, params, nextPageTokenValue, storage);
       }
       
-      // 응답 객체 업데이트
-      response.data.items = allVideos;
-      
-      // 데이터베이스에 저장
-      const apiVideos = response.data.items;
-      for (const video of apiVideos) {
-        await storage.saveLikedVideo(req.user.id, {
-          videoId: video.id,
-          title: video.snippet.title,
-          description: video.snippet.description,
-          channelId: video.snippet.channelId,
-          channelTitle: video.snippet.channelTitle,
-          publishedAt: new Date(video.snippet.publishedAt),
-          thumbnailUrl: video.snippet.thumbnails.medium?.url || video.snippet.thumbnails.default?.url,
-          duration: video.contentDetails?.duration || null,
-          viewCount: video.statistics?.viewCount || '0',
-          likeCount: video.statistics?.likeCount || '0',
-          metadata: {
-            tags: video.snippet.tags || [],
-            categoryId: video.snippet.categoryId,
-            defaultLanguage: video.snippet.defaultLanguage,
-            privacyStatus: video.status?.privacyStatus || 'public'
-          }
-        });
+      // 점진적 로딩이 아닌 경우, 모든 비디오를 한번에 저장
+      if (!((req.query.refresh === 'true' || dbVideos.length === 0) && nextPageTokenValue)) {
+        response.data.items = allVideos;
+        // 일반적인 케이스: 모든 비디오를 데이터베이스에 저장
+        await saveVideosToDatabase(req.user.id, response.data.items, storage);
       }
       
       // 저장 후 필터링된 데이터 다시 가져오기
@@ -388,6 +366,102 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     res.status(500).json({ error: '좋아요한 영상을 가져오는데 실패했습니다', details: error.message });
   }
 });
+
+// 비디오 데이터베이스 저장 함수
+async function saveVideosToDatabase(userId, videos, storage) {
+  try {
+    for (const video of videos) {
+      await storage.saveLikedVideo(userId, {
+        videoId: video.id,
+        title: video.snippet.title,
+        description: video.snippet.description,
+        channelId: video.snippet.channelId,
+        channelTitle: video.snippet.channelTitle,
+        publishedAt: new Date(video.snippet.publishedAt),
+        thumbnailUrl: video.snippet.thumbnails.medium?.url || video.snippet.thumbnails.default?.url,
+        duration: video.contentDetails?.duration || null,
+        viewCount: video.statistics?.viewCount || '0',
+        likeCount: video.statistics?.likeCount || '0',
+        metadata: {
+          tags: video.snippet.tags || [],
+          categoryId: video.snippet.categoryId,
+          defaultLanguage: video.snippet.defaultLanguage,
+          privacyStatus: video.status?.privacyStatus || 'public'
+        }
+      });
+    }
+    console.log(`저장 완료: ${videos.length} 개의 비디오`);
+  } catch (error) {
+    console.error('비디오 저장 오류:', error);
+  }
+}
+
+// 백그라운드에서 남은 페이지 로드 함수
+async function loadRemainingPages(userId, params, nextPageToken, storage) {
+  try {
+    let currentPageToken = nextPageToken;
+    let pageCount = 1; // 첫 페이지는 이미 로드됨
+    let totalVideos = [];
+    
+    // YouTube API 클라이언트 초기화
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      `${process.env.REDIRECT_URI || 'http://localhost:5000'}/auth/google/callback`
+    );
+    
+    // 인증된 클라이언트로 YouTube API 초기화
+    const user = await storage.getUserById(userId);
+    oauth2Client.setCredentials({
+      access_token: user.tokens.accessToken,
+      refresh_token: user.tokens.refreshToken
+    });
+    
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: oauth2Client
+    });
+    
+    // 최대 399페이지까지 추가 데이터 로드 (첫 페이지는 이미 로드됨)
+    while (currentPageToken && pageCount < 400) {
+      try {
+        console.log(`YouTube API 페이지 로드 중: ${pageCount + 1} 번째 페이지`);
+        
+        const nextPageParams = { ...params, pageToken: currentPageToken };
+        const nextPageResponse = await youtube.videos.list(nextPageParams);
+        
+        if (nextPageResponse.data.items && nextPageResponse.data.items.length > 0) {
+          // 데이터베이스에 순차적으로 저장
+          await saveVideosToDatabase(userId, nextPageResponse.data.items, storage);
+          
+          totalVideos = [...totalVideos, ...nextPageResponse.data.items];
+          currentPageToken = nextPageResponse.data.nextPageToken;
+          pageCount++;
+          
+          // 각 페이지마다 서버 로그
+          console.log(`YouTube API 응답 성공: ${pageCount} 번째 페이지, ${nextPageResponse.data.items.length} 개의 비디오`);
+        } else {
+          console.log('더 이상 로드할 비디오가 없습니다.');
+          break;
+        }
+      } catch (pageError) {
+        console.error(`페이지 ${pageCount + 1} 로딩 오류:`, pageError);
+        // 오류가 발생해도 다음 페이지 시도
+        if (pageError.response && pageError.response.status === 403) {
+          console.log('API 할당량 초과. 페이지 로딩 중단.');
+          break;
+        }
+      }
+      
+      // API 요청 사이에 짧은 지연 추가 (할당량 문제 방지)
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    console.log(`백그라운드 로딩 완료. 총 ${pageCount} 페이지, ${totalVideos.length} 개의 비디오 추가 로드됨.`);
+  } catch (error) {
+    console.error('백그라운드 페이지 로딩 오류:', error);
+  }
+}
 
 // 채널별 좋아요한 영상 가져오기
 app.get('/api/channels', isAuthenticated, async (req, res) => {
