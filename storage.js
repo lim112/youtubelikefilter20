@@ -74,8 +74,11 @@ class Storage {
         .from(likedVideos)
         .where(eq(likedVideos.userId, userId))
         .limit(limit)
-        .offset(offset)
-        .orderBy(desc(likedVideos.createdAt));
+        .offset(offset);
+      
+      // 기본적으로 좋아요 순서(YouTube API 응답 순서)로 정렬
+      // 낮은 likeOrder 값이 더 최근에 좋아요한 영상
+      query = query.orderBy(asc(likedVideos.likeOrder));
       
       // 필터 적용
       if (filter.channelId) {
@@ -120,7 +123,7 @@ class Storage {
     }
   }
 
-  async saveLikedVideo(userId, videoData) {
+  async saveLikedVideo(userId, videoData, index = 0) {
     try {
       // 이미 존재하는지 확인
       const existingVideo = await this.getLikedVideoByVideoId(userId, videoData.videoId);
@@ -130,17 +133,21 @@ class Storage {
         // 좋아요 날짜로 사용되는 createdAt 필드를 업데이트 객체에서 제거
         const { createdAt, ...dataToUpdate } = videoData;
         
+        // likeOrder 필드 추가 (YouTube API 응답 순서 유지)
         const [updatedVideo] = await db
           .update(likedVideos)
-          .set(dataToUpdate)
+          .set({
+            ...dataToUpdate,
+            likeOrder: existingVideo.likeOrder !== undefined ? existingVideo.likeOrder : index
+          })
           .where(eq(likedVideos.id, existingVideo.id))
           .returning();
         return updatedVideo;
       } else {
-        // 새로 저장 - 이 경우에는 현재 시간이 좋아요 한 시점으로 저장됨
+        // 새로 저장 - YouTube API 응답 순서를 likeOrder 필드에 저장
         const [newVideo] = await db
           .insert(likedVideos)
-          .values({...videoData, userId})
+          .values({...videoData, userId, likeOrder: index})
           .returning();
         return newVideo;
       }

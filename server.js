@@ -225,7 +225,8 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       
       // 데이터베이스에 저장
       const apiVideos = response.data.items;
-      for (const video of apiVideos) {
+      for (let i = 0; i < apiVideos.length; i++) {
+        const video = apiVideos[i];
         await storage.saveLikedVideo(req.user.id, {
           videoId: video.id,
           title: video.snippet.title,
@@ -243,7 +244,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             defaultLanguage: video.snippet.defaultLanguage,
             privacyStatus: video.status?.privacyStatus || 'public'
           }
-        });
+        }, i);
       }
       
       // 저장 후 필터링된 데이터 다시 가져오기
