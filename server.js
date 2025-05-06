@@ -172,12 +172,24 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     const filter = {}; // 기본적으로 필터 없음
     
     // 필터 매개변수가 있는 경우에만 적용
-    if (req.query.channelId) {
-      filter.channelId = req.query.channelId;
+    if (req.query.channel) {
+      filter.channelId = req.query.channel;
     }
     
-    if (req.query.title) {
-      filter.title = req.query.title;
+    if (req.query.search) {
+      filter.search = req.query.search;
+    }
+    
+    if (req.query.date) {
+      filter.date = req.query.date;
+    }
+    
+    if (req.query.duration) {
+      filter.duration = req.query.duration;
+    }
+    
+    if (req.query.sort) {
+      filter.sort = req.query.sort;
     }
     
     // 로컬 데이터베이스에서 먼저, 필터가 없으면 모든 영상 반환

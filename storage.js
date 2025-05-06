@@ -69,21 +69,79 @@ class Storage {
   // 좋아요한 영상 관련 메서드
   async getLikedVideos(userId, limit = 100, offset = 0, filter = {}) {
     try {
+      // 기본 정렬 설정 (기본값: 게시일 내림차순)
+      let orderByClause = desc(likedVideos.publishedAt);
+      
+      // 정렬 설정이 있으면 적용
+      if (filter.sort) {
+        if (filter.sort === 'publishedAt') {
+          orderByClause = desc(likedVideos.publishedAt); // 최신순
+        } else if (filter.sort === 'publishedAtOldest') {
+          orderByClause = asc(likedVideos.publishedAt); // 오래된순
+        } else if (filter.sort === 'viewCount') {
+          orderByClause = desc(likedVideos.viewCount); // 조회수 내림차순
+        } else if (filter.sort === 'likeCount') {
+          orderByClause = desc(likedVideos.likeCount); // 좋아요 내림차순
+        }
+      }
+      
       let query = db
         .select()
         .from(likedVideos)
         .where(eq(likedVideos.userId, userId))
         .limit(limit)
         .offset(offset)
-        .orderBy(desc(likedVideos.publishedAt)); // createdAt이 아닌 publishedAt으로 정렬
+        .orderBy(orderByClause);
       
-      // 필터 적용
+      // 채널 필터 적용
       if (filter.channelId) {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      if (filter.title) {
-        query = query.where(like(likedVideos.title, `%${filter.title}%`));
+      // 검색어 필터 적용 (제목 또는 설명에 포함)
+      if (filter.search) {
+        query = query.where(
+          or(
+            like(likedVideos.title, `%${filter.search}%`),
+            like(likedVideos.description, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      // 날짜 필터 적용
+      if (filter.date) {
+        const now = new Date();
+        let dateLimit;
+        
+        if (filter.date === 'day') {
+          dateLimit = new Date(now.setDate(now.getDate() - 1));
+        } else if (filter.date === 'week') {
+          dateLimit = new Date(now.setDate(now.getDate() - 7));
+        } else if (filter.date === 'month') {
+          dateLimit = new Date(now.setMonth(now.getMonth() - 1));
+        } else if (filter.date === 'year') {
+          dateLimit = new Date(now.setFullYear(now.getFullYear() - 1));
+        }
+        
+        if (dateLimit) {
+          query = query.where(sql`${likedVideos.publishedAt} >= ${dateLimit}`);
+        }
+      }
+      
+      // 영상 길이 필터 적용
+      if (filter.duration) {
+        // 영상 길이 필터링은 ISO 8601 형식을 사용하므로 쿼리에 맞게 조건을 작성
+        // 여기서는 간단한 문자열 비교로 구현
+        if (filter.duration === 'short') {
+          // 4분 미만 (PT4M 미만)
+          query = query.where(sql`${likedVideos.duration} < 'PT4M'`);
+        } else if (filter.duration === 'medium') {
+          // 4-20분 (PT4M 이상 PT20M 이하)
+          query = query.where(sql`${likedVideos.duration} >= 'PT4M' AND ${likedVideos.duration} <= 'PT20M'`);
+        } else if (filter.duration === 'long') {
+          // 20분 초과 (PT20M 초과)
+          query = query.where(sql`${likedVideos.duration} > 'PT20M'`);
+        }
       }
       
       // 디버깅 로그 추가
@@ -106,13 +164,53 @@ class Storage {
         .from(likedVideos)
         .where(eq(likedVideos.userId, userId));
       
-      // 필터 적용
+      // 채널 필터 적용
       if (filter.channelId) {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      if (filter.title) {
-        query = query.where(like(likedVideos.title, `%${filter.title}%`));
+      // 검색어 필터 적용 (제목 또는 설명에 포함)
+      if (filter.search) {
+        query = query.where(
+          or(
+            like(likedVideos.title, `%${filter.search}%`),
+            like(likedVideos.description, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      // 날짜 필터 적용
+      if (filter.date) {
+        const now = new Date();
+        let dateLimit;
+        
+        if (filter.date === 'day') {
+          dateLimit = new Date(now.setDate(now.getDate() - 1));
+        } else if (filter.date === 'week') {
+          dateLimit = new Date(now.setDate(now.getDate() - 7));
+        } else if (filter.date === 'month') {
+          dateLimit = new Date(now.setMonth(now.getMonth() - 1));
+        } else if (filter.date === 'year') {
+          dateLimit = new Date(now.setFullYear(now.getFullYear() - 1));
+        }
+        
+        if (dateLimit) {
+          query = query.where(sql`${likedVideos.publishedAt} >= ${dateLimit}`);
+        }
+      }
+      
+      // 영상 길이 필터 적용
+      if (filter.duration) {
+        if (filter.duration === 'short') {
+          // 4분 미만 (PT4M 미만)
+          query = query.where(sql`${likedVideos.duration} < 'PT4M'`);
+        } else if (filter.duration === 'medium') {
+          // 4-20분 (PT4M 이상 PT20M 이하)
+          query = query.where(sql`${likedVideos.duration} >= 'PT4M' AND ${likedVideos.duration} <= 'PT20M'`);
+        } else if (filter.duration === 'long') {
+          // 20분 초과 (PT20M 초과)
+          query = query.where(sql`${likedVideos.duration} > 'PT20M'`);
+        }
       }
       
       const [result] = await query;
