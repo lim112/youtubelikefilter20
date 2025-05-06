@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const channelSelect = document.getElementById('channel-select');
   const dateFilter = document.getElementById('date-filter');
   const durationFilter = document.getElementById('duration-filter');
+  const sortFilter = document.getElementById('sort-filter');
   const applyFiltersBtn = document.getElementById('apply-filters-btn');
   const clearFiltersBtn = document.getElementById('clear-filters-btn');
   const refreshBtn = document.getElementById('refresh-btn');
@@ -51,6 +52,10 @@ document.addEventListener('DOMContentLoaded', function() {
   nextPageBtn.addEventListener('click', () => changePage('next'));
   exportCsvBtn.addEventListener('click', () => exportData('csv'));
   exportJsonBtn.addEventListener('click', () => exportData('json'));
+  sortFilter.addEventListener('change', function() {
+    applySorting();
+    displayVideos(filteredVideos);
+  });
   
   // 뷰 모드 변경 이벤트
   viewBtns.forEach(btn => {
@@ -154,6 +159,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 채널 선택 메뉴 업데이트
       populateChannelSelect();
+      
+      // 정렬 적용
+      applySorting();
       
       // 비디오 표시
       displayVideos(filteredVideos);
@@ -293,6 +301,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return matchesSearch && matchesChannel && matchesDate && matchesDuration;
     });
     
+    // 정렬 적용
+    applySorting();
+    
     // 필터링된 결과 표시
     displayVideos(filteredVideos);
     
@@ -302,6 +313,48 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       hideEmptyState();
     }
+  }
+  
+  /**
+   * 정렬 적용 함수
+   */
+  function applySorting() {
+    const sortBy = sortFilter.value;
+    
+    filteredVideos.sort((a, b) => {
+      const isYoutubeApiA = a.snippet !== undefined;
+      const isYoutubeApiB = b.snippet !== undefined;
+      
+      if (sortBy === 'publishedAt') {
+        // 영상 게시일 기준 (최신순)
+        const dateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
+        const dateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
+        return dateB - dateA; // 내림차순 (최신순)
+      } 
+      else if (sortBy === 'likedAt') {
+        // 좋아요 날짜 기준 (최신순)
+        const likedAtA = new Date(isYoutubeApiA ? (a.createdAt || a.snippet.publishedAt) : a.createdAt);
+        const likedAtB = new Date(isYoutubeApiB ? (b.createdAt || b.snippet.publishedAt) : b.createdAt);
+        return likedAtB - likedAtA; // 내림차순 (최신순)
+      }
+      else if (sortBy === 'viewCount') {
+        // 조회수 기준 (내림차순)
+        const viewCountA = parseInt(isYoutubeApiA ? (a.statistics?.viewCount || '0') : (a.viewCount || '0'));
+        const viewCountB = parseInt(isYoutubeApiB ? (b.statistics?.viewCount || '0') : (b.viewCount || '0'));
+        return viewCountB - viewCountA;
+      }
+      else if (sortBy === 'likeCount') {
+        // 좋아요 기준 (내림차순)
+        const likeCountA = parseInt(isYoutubeApiA ? (a.statistics?.likeCount || '0') : (a.likeCount || '0'));
+        const likeCountB = parseInt(isYoutubeApiB ? (b.statistics?.likeCount || '0') : (b.likeCount || '0'));
+        return likeCountB - likeCountA;
+      }
+      
+      // 기본값: 영상 게시일 기준
+      const defaultDateA = new Date(isYoutubeApiA ? a.snippet.publishedAt : a.publishedAt);
+      const defaultDateB = new Date(isYoutubeApiB ? b.snippet.publishedAt : b.publishedAt);
+      return defaultDateB - defaultDateA; // 내림차순 (최신순)
+    });
   }
   
   /**
@@ -329,9 +382,11 @@ document.addEventListener('DOMContentLoaded', function() {
     channelSelect.value = '';
     dateFilter.value = '';
     durationFilter.value = '';
+    sortFilter.value = 'publishedAt'; // 정렬 옵션도 초기화 (기본값: 영상 게시일)
     
     // 모든 비디오 표시
     filteredVideos = [...allVideos];
+    applySorting(); // 정렬 적용
     displayVideos(filteredVideos);
     
     // 결과가 없는 경우
@@ -565,10 +620,25 @@ document.addEventListener('DOMContentLoaded', function() {
     views.textContent = `조회수 ${formatViewCount(viewCount)}회`;
     stats.appendChild(views);
     
-    const date = document.createElement('span');
+    // 비디오 날짜 정보를 담을 div
+    const datesContainer = document.createElement('div');
+    datesContainer.className = 'video-dates';
+    
+    // 게시일
+    const publishDateElem = document.createElement('div');
+    publishDateElem.className = 'date-info';
     const publishDate = isYoutubeApi ? video.snippet.publishedAt : video.publishedAt;
-    date.textContent = formatDate(publishDate);
-    stats.appendChild(date);
+    publishDateElem.innerHTML = `<span class="date-label">게시일:</span> ${formatDate(publishDate)}`;
+    datesContainer.appendChild(publishDateElem);
+    
+    // 좋아요한 날짜
+    const likedDateElem = document.createElement('div');
+    likedDateElem.className = 'date-info';
+    const likedDate = isYoutubeApi ? (video.createdAt || video.snippet.publishedAt) : video.createdAt;
+    likedDateElem.innerHTML = `<span class="date-label">좋아요 날짜:</span> ${formatDate(likedDate)}`;
+    datesContainer.appendChild(likedDateElem);
+    
+    info.appendChild(datesContainer);
     
     info.appendChild(stats);
     
