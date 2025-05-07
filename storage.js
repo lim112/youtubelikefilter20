@@ -184,7 +184,7 @@ class Storage {
     try {
       console.log(`사용자 ${userId}의 비디오 메타데이터 로드 중...`);
       
-      // 1. 채널 정보 가져오기
+      // 1. 채널 정보 가져오기 - 전체 DB에서 채널 정보 로드
       const query = `
         SELECT 
           channel_id AS "channelId", 
@@ -199,10 +199,31 @@ class Storage {
       const channelsResult = await pool.query(query, [userId]);
       const channels = channelsResult.rows;
       
+      // 2. 모든 채널에 대해 첫/마지막 게시일 정보 추가 (선택적)
+      const channelsWithDetails = await Promise.all(channels.map(async (channel) => {
+        // 각 채널별 가장 최근 및 가장 오래된 영상 게시일 확인
+        const dateQuery = `
+          SELECT 
+            MAX(published_at) AS "latestDate",
+            MIN(published_at) AS "oldestDate"
+          FROM liked_videos
+          WHERE user_id = $1 AND channel_id = $2
+        `;
+        
+        const dateResult = await pool.query(dateQuery, [userId, channel.channelId]);
+        const dateInfo = dateResult.rows[0];
+        
+        return {
+          ...channel,
+          latestDate: dateInfo.latestDate,
+          oldestDate: dateInfo.oldestDate
+        };
+      }));
+      
       console.log(`${channels.length}개 채널 메타데이터 로드됨`);
       
       return { 
-        channels,
+        channels: channelsWithDetails,
         totalVideos: await this.countLikedVideos(userId)
       };
     } catch (error) {

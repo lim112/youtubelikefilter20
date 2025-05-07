@@ -351,45 +351,109 @@ document.addEventListener('DOMContentLoaded', function() {
   
   /**
    * 채널 정보 추출
+   * @param {boolean} fromCurrentPageOnly - 현재 페이지에서만 채널 추출할지 여부
    */
-  function extractChannels() {
-    channels.clear();
-    
-    allVideos.forEach(video => {
-      const isYoutubeApi = video.snippet !== undefined;
+  function extractChannels(fromCurrentPageOnly = false) {
+    // 메타데이터 API에서 이미 전체 채널 목록을 가져왔다면 현재 페이지만 추가하기
+    if (fromCurrentPageOnly) {
+      // 현재 페이지의 영상에서 채널 정보 추가 (기존 채널 정보는 유지)
+      allVideos.forEach(video => {
+        const isYoutubeApi = video.snippet !== undefined;
+        
+        const channelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
+        const channelTitle = isYoutubeApi ? video.snippet.channelTitle : video.channelTitle;
+        
+        if (channelId && !channels.has(channelId)) {
+          channels.set(channelId, {
+            id: channelId,
+            title: channelTitle,
+            videoCount: 1
+          });
+        } else if (channelId && channels.has(channelId)) {
+          // 이미 있는 채널이면 영상 개수 증가
+          const channel = channels.get(channelId);
+          channel.videoCount = (channel.videoCount || 1) + 1;
+          channels.set(channelId, channel);
+        }
+      });
+    } else {
+      // 전체 초기화 (메타데이터 API 호출 전이거나 전체 재스캔 시)
+      channels.clear();
       
-      const channelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
-      const channelTitle = isYoutubeApi ? video.snippet.channelTitle : video.channelTitle;
-      
-      if (channelId && !channels.has(channelId)) {
-        channels.set(channelId, {
-          id: channelId,
-          title: channelTitle
-        });
-      }
-    });
+      allVideos.forEach(video => {
+        const isYoutubeApi = video.snippet !== undefined;
+        
+        const channelId = isYoutubeApi ? video.snippet.channelId : video.channelId;
+        const channelTitle = isYoutubeApi ? video.snippet.channelTitle : video.channelTitle;
+        
+        if (channelId && !channels.has(channelId)) {
+          channels.set(channelId, {
+            id: channelId,
+            title: channelTitle,
+            videoCount: 1
+          });
+        } else if (channelId && channels.has(channelId)) {
+          // 이미 있는 채널이면 영상 개수 증가
+          const channel = channels.get(channelId);
+          channel.videoCount = (channel.videoCount || 1) + 1;
+          channels.set(channelId, channel);
+        }
+      });
+    }
   }
   
   /**
    * 채널 선택 메뉴 업데이트
+   * 메타데이터 API의 전체 채널 목록이나 현재까지 로드된 영상에서 발견된 채널 정보로 드롭다운 구성
    */
   function populateChannelSelect() {
+    // 현재 선택된 채널 저장 (업데이트 후 다시 선택하기 위함)
+    const currentSelection = channelSelect.value;
+    
     // 기존 옵션 제거 ('모든 채널' 옵션 제외)
     while (channelSelect.options.length > 1) {
       channelSelect.remove(1);
     }
     
-    // 채널 이름으로 정렬
+    // 채널 정렬 - 1) 동영상 개수 내림차순, 2) 채널명 오름차순
     const sortedChannels = Array.from(channels.values())
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((a, b) => {
+        // 영상 개수로 먼저 정렬 (내림차순)
+        const countDiff = (b.videoCount || 0) - (a.videoCount || 0);
+        if (countDiff !== 0) return countDiff;
+        
+        // 개수가 같으면 채널명으로 정렬 (오름차순)
+        return a.title.localeCompare(b.title);
+      });
     
-    // 채널 옵션 추가
+    // 채널 옵션 추가 (동영상 개수 표시)
     sortedChannels.forEach(channel => {
       const option = document.createElement('option');
-      option.value = channel.id;
-      option.textContent = channel.title;
+      option.value = channel.id || channel.channelId;
+      
+      // 채널 이름에 비디오 개수 표시 (있는 경우)
+      const count = channel.videoCount || 0;
+      option.textContent = `${channel.title} (${count}개)`;
+      
+      // 데이터 속성 추가로 필요한 정보 저장
+      option.dataset.title = channel.title;
+      option.dataset.count = count;
+      
+      // 채널에 최신/가장 오래된 영상 정보가 있으면 표시
+      if (channel.latestDate) {
+        option.dataset.latest = formatDate(channel.latestDate);
+      }
+      if (channel.oldestDate) {
+        option.dataset.oldest = formatDate(channel.oldestDate);
+      }
+      
       channelSelect.appendChild(option);
     });
+    
+    // 이전에 선택한 채널이 있으면 다시 선택
+    if (currentSelection) {
+      channelSelect.value = currentSelection;
+    }
   }
   
   /**
