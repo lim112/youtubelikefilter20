@@ -216,7 +216,9 @@ class Storage {
         return {
           ...channel,
           latestDate: dateInfo.latestDate,
-          oldestDate: dateInfo.oldestDate
+          oldestDate: dateInfo.oldestDate,
+          // 숫자값이 문자열로 인식되는 문제 방지를 위해 숫자로 변환하여 반환
+          videoCount: parseInt(channel.videoCount)
         };
       }));
       

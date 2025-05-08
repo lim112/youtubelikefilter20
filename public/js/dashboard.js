@@ -424,8 +424,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 채널 정렬 - 1) 동영상 개수 내림차순, 2) 채널명 오름차순
     const sortedChannels = Array.from(channels.values())
       .sort((a, b) => {
-        // 영상 개수로 먼저 정렬 (내림차순)
-        const countDiff = (b.videoCount || 0) - (a.videoCount || 0);
+        // 영상 개수로 먼저 정렬 (내림차순) - 항상 정수로 변환하여 비교
+        const countA = parseInt(a.videoCount || 0);
+        const countB = parseInt(b.videoCount || 0);
+        const countDiff = countB - countA;
+        
         if (countDiff !== 0) return countDiff;
         
         // 개수가 같으면 채널명으로 정렬 (오름차순)
@@ -438,7 +441,8 @@ document.addEventListener('DOMContentLoaded', function() {
       option.value = channel.id || channel.channelId;
       
       // 채널 이름에 비디오 개수 표시 (있는 경우)
-      const count = channel.videoCount || 0;
+      // 반드시 숫자로 변환하여 계산 (문자열로 처리되지 않도록 함)
+      const count = parseInt(channel.videoCount || 0);
       option.textContent = `${channel.title} (${count}개)`;
       
       // 데이터 속성 추가로 필요한 정보 저장
