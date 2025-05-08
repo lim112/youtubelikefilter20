@@ -116,8 +116,11 @@ document.addEventListener('DOMContentLoaded', function() {
           channels.clear();
           data.metadata.channels.forEach(channel => {
             channels.set(channel.channelId, {
+              id: channel.channelId,
               title: channel.channelTitle,
-              videoCount: channel.videoCount
+              videoCount: channel.videoCount,
+              latestDate: channel.latestDate,
+              oldestDate: channel.oldestDate
             });
           });
           
@@ -291,11 +294,14 @@ document.addEventListener('DOMContentLoaded', function() {
       prevPageToken = data.prevPageToken || '';
       currentPageToken = pageToken;
       
-      // 채널 정보 추출 및 정리
-      extractChannels();
+      // 채널 정보 추출 및 정리 (현재 페이지에서만)
+      extractChannels(true);
       
       // 채널 선택 메뉴 업데이트
-      populateChannelSelect();
+      // 첫 페이지인 경우에만 채널 선택 메뉴를 업데이트 (메타데이터 API가 이미 전체 채널 목록을 제공함)
+      if (currentPage === 1) {
+        populateChannelSelect();
+      }
       
       // 비디오 표시
       displayVideos(filteredVideos);
