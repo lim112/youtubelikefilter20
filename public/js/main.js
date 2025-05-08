@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 로그인 상태 확인 함수
 async function checkLoginStatus() {
   try {
-    const response = await fetch('/api/user');
+    const response = await fetch('/api/auth/status');
     const data = await response.json();
     
     // 이미 로그인되어 있으면 대시보드로 리디렉션
