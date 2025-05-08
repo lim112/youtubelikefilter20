@@ -421,18 +421,11 @@ document.addEventListener('DOMContentLoaded', function() {
       channelSelect.remove(1);
     }
     
-    // 채널 정렬 - 1) 동영상 개수 내림차순, 2) 채널명 오름차순
+    // 채널 정렬 - 1) 채널명 내림차순 (가나다 역순)
     const sortedChannels = Array.from(channels.values())
       .sort((a, b) => {
-        // 영상 개수로 먼저 정렬 (내림차순) - 항상 정수로 변환하여 비교
-        const countA = parseInt(a.videoCount || 0);
-        const countB = parseInt(b.videoCount || 0);
-        const countDiff = countB - countA;
-        
-        if (countDiff !== 0) return countDiff;
-        
-        // 개수가 같으면 채널명으로 정렬 (오름차순)
-        return a.title.localeCompare(b.title);
+        // 채널명으로 내림차순 정렬 (가나다 역순)
+        return b.title.localeCompare(a.title);
       });
     
     // 채널 옵션 추가 (동영상 개수 표시)

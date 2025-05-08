@@ -193,7 +193,7 @@ class Storage {
         FROM liked_videos
         WHERE user_id = $1
         GROUP BY channel_id, channel_title
-        ORDER BY "videoCount" DESC
+        ORDER BY channel_title DESC
       `;
       
       const channelsResult = await pool.query(query, [userId]);
