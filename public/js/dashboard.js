@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
   const channelSelect = document.getElementById('channel-select');
+  const channelSearch = document.getElementById('channel-search');
   const dateFilter = document.getElementById('date-filter');
   const durationFilter = document.getElementById('duration-filter');
   const sortFilter = document.getElementById('sort-filter');
@@ -58,6 +59,17 @@ document.addEventListener('DOMContentLoaded', function() {
   tryLoginBtn.addEventListener('click', () => window.location.href = '/auth/google');
   sortFilter.addEventListener('change', function() {
     applySorting();
+  });
+  
+  // 채널 검색 이벤트 리스너
+  channelSearch.addEventListener('input', function() {
+    filterChannelOptions();
+  });
+  // 엔터 키 검색 방지 (폼 제출 방지)
+  channelSearch.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
   });
   
   // 뷰 모드 변경 이벤트

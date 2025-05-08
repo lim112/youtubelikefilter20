@@ -34,10 +34,13 @@
           
           <div class="filter-group">
             <h4>채널 선택</h4>
-            <select id="channel-select">
-              <option value="">모든 채널</option>
-              <!-- 채널 옵션이 여기에 동적으로 추가됩니다 -->
-            </select>
+            <div class="channel-search-container">
+              <input type="text" id="channel-search" placeholder="채널명 검색..." class="channel-search-input">
+              <select id="channel-select" size="10" class="channel-select-with-search">
+                <option value="">모든 채널</option>
+                <!-- 채널 옵션이 여기에 동적으로 추가됩니다 -->
+              </select>
+            </div>
           </div>
           
           <div class="filter-group">

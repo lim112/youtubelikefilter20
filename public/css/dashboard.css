@@ -98,6 +98,49 @@ select {
   font-size: 14px;
 }
 
+/* 채널 검색 기능 스타일 */
+.channel-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.channel-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+}
+
+.channel-select-with-search {
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.channel-select-with-search option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.channel-select-with-search option:hover {
+  background-color: #f5f5f5;
+}
+
+.channel-select-with-search option:first-child {
+  font-weight: bold;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 채널 검색 하이라이트 */
+.highlight-match {
+  background-color: rgba(255, 230, 0, 0.3);
+  font-weight: bold;
+}
+
 .filter-buttons, .export-buttons {
   display: flex;
   gap: 10px;
