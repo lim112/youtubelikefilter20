@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
   async function fetchMetadata() {
     try {
       console.log('메타데이터 가져오는 중...');
-      const response = await fetch('/api/videos/metadata');
+      const response = await fetch('/api/metadata');
       
       if (!response.ok) {
         throw new Error('메타데이터 가져오기 실패');
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
    * 사용자 정보 가져오기
    */
   async function getUserInfo() {
-    const response = await fetch('/api/user');
+    const response = await fetch('/api/auth/status');
     const data = await response.json();
     
     if (!data.isLoggedIn) {
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   async function logout() {
     try {
-      await fetch('/api/logout');
+      await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/';
     } catch (error) {
       console.error('로그아웃 오류:', error);
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showLoading();
     
     try {
-      let url = '/api/liked-videos';
+      let url = '/api/videos';
       const params = new URLSearchParams();
       
       if (pageToken) {
