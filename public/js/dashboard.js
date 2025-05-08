@@ -469,6 +469,86 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentSelection) {
       channelSelect.value = currentSelection;
     }
+    
+    // 채널 검색어가 있으면 필터 적용
+    if (channelSearch.value.trim()) {
+      filterChannelOptions();
+    }
+  }
+  
+  /**
+   * 채널 검색어에 따라 채널 옵션 필터링
+   */
+  function filterChannelOptions() {
+    const searchTerm = channelSearch.value.trim().toLowerCase();
+    const options = Array.from(channelSelect.options);
+    
+    // 검색어가 없으면 모든 옵션 표시
+    if (!searchTerm) {
+      options.forEach(option => {
+        option.style.display = '';
+        
+        // 기존 하이라이트 제거 (텍스트 복원)
+        if (option.dataset.originalText) {
+          option.textContent = option.dataset.originalText;
+          delete option.dataset.originalText;
+        }
+      });
+      return;
+    }
+    
+    // 검색어가 있으면 필터링
+    let visibleCount = 0;
+    
+    options.forEach(option => {
+      // 첫 번째 옵션 (모든 채널)은 항상 표시
+      if (option.value === '') {
+        option.style.display = '';
+        visibleCount++;
+        return;
+      }
+      
+      const channelName = option.dataset.title?.toLowerCase() || '';
+      
+      if (channelName.includes(searchTerm)) {
+        option.style.display = '';
+        visibleCount++;
+        
+        // 검색어 하이라이트 처리
+        if (!option.dataset.originalText) {
+          option.dataset.originalText = option.textContent;
+        }
+        
+        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const highlightedText = option.dataset.originalText.replace(
+          regex, 
+          '<span class="highlight-match">$1</span>'
+        );
+        
+        // innerHTML을 사용하면 HTML이 해석됨
+        option.innerHTML = highlightedText;
+      } else {
+        option.style.display = 'none';
+      }
+    });
+    
+    // 결과가 없으면 안내 메시지 표시
+    if (visibleCount <= 1) { // '모든 채널' 옵션만 표시되는 경우
+      // 이미 '검색 결과 없음' 옵션이 있는지 확인
+      if (!options.some(opt => opt.classList.contains('no-results'))) {
+        const noResultsOption = document.createElement('option');
+        noResultsOption.disabled = true;
+        noResultsOption.textContent = `"${searchTerm}" 검색 결과가 없습니다`;
+        noResultsOption.classList.add('no-results');
+        channelSelect.appendChild(noResultsOption);
+      }
+    } else {
+      // '검색 결과 없음' 옵션 제거
+      const noResultsOption = options.find(opt => opt.classList.contains('no-results'));
+      if (noResultsOption) {
+        channelSelect.removeChild(noResultsOption);
+      }
+    }
   }
   
   /**
@@ -513,9 +593,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function clearFilters() {
     searchInput.value = '';
     channelSelect.value = '';
+    channelSearch.value = ''; // 채널 검색창도 초기화
     dateFilter.value = '';
     durationFilter.value = '';
     sortFilter.value = 'publishedAt'; // 정렬 옵션도 초기화 (기본값: 영상 게시일)
+    
+    // 채널 옵션 모두 표시로 초기화
+    filterChannelOptions();
     
     // 서버에 필터가 없는 상태로 요청하기 위해 페이지를 1로 재설정하고 다시 가져옴
     currentPage = 1;
