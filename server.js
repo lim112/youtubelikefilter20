@@ -23,13 +23,25 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
+
+// Netlify와 Replit 환경에 따른 세션 설정
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'youtube_filter_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false },
+  cookie: { 
+    secure: isNetlify, // Netlify는 HTTPS를 사용하므로 secure: true
+    maxAge: 1000 * 60 * 60 * 24 // 세션 유효 기간: 1일
+  },
   store: storage.sessionStore
-}));
+};
+
+console.log('세션 설정:', {
+  secure: sessionConfig.cookie.secure,
+  environment: isNetlify ? 'Netlify' : (isReplit ? 'Replit' : 'Local')
+});
+
+app.use(session(sessionConfig));
 
 // Passport 설정
 app.use(passport.initialize());
@@ -153,6 +165,7 @@ app.get('/api/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
+    console.log('인증 성공: 일반 콜백 - 대시보드로 리디렉션');
     res.redirect('/dashboard');
   }
 );
@@ -161,7 +174,13 @@ app.get('/auth/google/callback',
 app.get('/.netlify/functions/api/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('/dashboard');
+    console.log('인증 성공: Netlify 콜백 - 대시보드로 리디렉션');
+    // Netlify 환경에서는 루트 경로 기준으로 리디렉션
+    if (isNetlify) {
+      res.redirect('/dashboard');
+    } else {
+      res.redirect('/dashboard');
+    }
   }
 );
 
@@ -211,8 +230,10 @@ app.get('/api/videos/metadata', isAuthenticated, async (req, res) => {
 // 대시보드 페이지
 app.get('/dashboard', (req, res) => {
   if (req.isAuthenticated()) {
+    console.log('대시보드 페이지 요청: 인증됨');
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
   } else {
+    console.log('대시보드 페이지 요청: 인증되지 않음, 홈으로 리디렉션');
     res.redirect('/');
   }
 });
