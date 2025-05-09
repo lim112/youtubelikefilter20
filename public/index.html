@@ -3,133 +3,207 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>유튜브 좋아요 영상 필터</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>YouTube 좋아요 영상 필터 - 크롬 확장 프로그램</title>
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    
+    h1, h2, h3 {
+      color: #c00;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+    }
+    
+    .header img {
+      width: 128px;
+      height: 128px;
+      display: block;
+      margin: 0 auto 15px;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    pre {
+      background-color: #f4f4f4;
+      border-radius: 4px;
+      padding: 15px;
+      overflow-x: auto;
+    }
+    
+    .screenshots {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+    
+    .screenshots img {
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      max-width: 300px;
+    }
+    
+    ul {
+      list-style-type: circle;
+      padding-left: 25px;
+    }
+    
+    .steps {
+      counter-reset: step-counter;
+      list-style-type: none;
+      padding-left: 0;
+    }
+    
+    .steps li {
+      position: relative;
+      padding-left: 35px;
+      margin-bottom: 15px;
+    }
+    
+    .steps li::before {
+      content: counter(step-counter);
+      counter-increment: step-counter;
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-color: #c00;
+      color: white;
+      font-weight: bold;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 25px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      color: #777;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo">
-        <img src="/icons/icon128.svg" alt="로고" class="logo-img">
-        <h1>유튜브 좋아요 영상 필터</h1>
-      </div>
-      <nav>
-        <ul>
-          <li><a href="#features">기능</a></li>
-          <li><a href="#how-it-works">사용방법</a></li>
-          <li><a href="#about">소개</a></li>
-        </ul>
-      </nav>
-    </header>
-
-    <main>
-      <section class="hero">
-        <div class="hero-content">
-          <h2>당신이 좋아한 유튜브 영상을<br>쉽게 찾고 관리하세요</h2>
-          <p>좋아요를 누른 모든 영상을 채널별, 키워드별로 필터링하고 검색하세요.</p>
-          <div class="cta-buttons">
-            <a href="/auth/google" class="btn primary">
-              <i class="fab fa-google"></i> Google로 시작하기
-            </a>
-            <div id="auth-error" style="display: none; margin-top: 20px; padding: 10px; background-color: #ffebee; border-radius: 4px; color: #c62828; text-align: center;">
-              <p>인증 오류가 발생했습니다. 다시 로그인해주세요.</p>
-            </div>
-          </div>
-        </div>
-        <div class="hero-image">
-          <img src="/images/hero-image.svg" alt="앱 미리보기" onerror="this.onerror=null; this.src='/icons/icon128.svg';">
-        </div>
-      </section>
-
-      <section id="features" class="features">
-        <h2>주요 기능</h2>
-        <div class="feature-grid">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-filter"></i>
-            </div>
-            <h3>채널별 필터링</h3>
-            <p>좋아요한 영상을 채널별로 쉽게 필터링하여 원하는 콘텐츠를 빠르게 찾으세요.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-search"></i>
-            </div>
-            <h3>키워드 검색</h3>
-            <p>제목이나 설명에 포함된 키워드로 검색하여 원하는 영상을 찾으세요.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <h3>기간별 보기</h3>
-            <p>언제 좋아요를 눌렀는지 기억나지 않아도 날짜별로 영상을 찾을 수 있습니다.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-download"></i>
-            </div>
-            <h3>데이터 내보내기</h3>
-            <p>좋아요한 영상 목록을 CSV 또는 JSON 형식으로 내보내기할 수 있습니다.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" class="how-it-works">
-        <h2>사용 방법</h2>
-        <div class="steps">
-          <div class="step">
-            <div class="step-number">1</div>
-            <div class="step-content">
-              <h3>Google 계정으로 로그인</h3>
-              <p>YouTube 계정과 연결된 Google 계정으로 간단히 로그인하세요.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-number">2</div>
-            <div class="step-content">
-              <h3>권한 부여</h3>
-              <p>YouTube 좋아요 영상을 가져올 수 있도록 읽기 전용 액세스 권한을 부여하세요.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-number">3</div>
-            <div class="step-content">
-              <h3>좋아요 영상 탐색하기</h3>
-              <p>채널과 키워드로 좋아요한 영상을 필터링하고 정리하세요.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="about" class="about">
-        <h2>프로젝트 소개</h2>
-        <p>
-          유튜브 좋아요 영상 필터는 YouTube에서 좋아요를 누른 영상을 효율적으로 관리하기 위해 만들어진 웹 애플리케이션입니다.
-          YouTube API를 사용하여 사용자의 좋아요 영상을 가져오고, 다양한 필터링 기능을 제공합니다.
-          모든 데이터는 사용자의 브라우저 내에서 처리되며, 서버에 저장되지 않습니다.
-        </p>
-        <p>
-          이 프로젝트는 MIT 라이선스 하에 공개되어 있으며, 프로젝트 개선에 함께 참여해 주세요.
-        </p>
-      </section>
-    </main>
-
-    <footer>
-      <div class="footer-content">
-        <div class="copyright">
-          <p>&copy; 2025 유튜브 좋아요 영상 필터</p>
-          <p class="disclaimer">이 웹사이트는 YouTube나 Google과 제휴하거나 지원받지 않습니다.</p>
-        </div>
-        <div class="footer-nav">
-          <a href="#">이용약관</a>
-          <a href="#">개인정보 처리방침</a>
-        </div>
-      </div>
-    </footer>
+  <div class="header">
+    <img src="icons/icon128.svg" alt="YouTube 좋아요 영상 필터 아이콘">
+    <h1>YouTube 좋아요 영상 필터</h1>
+    <p>채널 및 키워드로 좋아요한 YouTube 영상 찾기</p>
   </div>
-
-  <script src="js/main.js"></script>
+  
+  <div class="card">
+    <h2>크롬 확장 프로그램 개요</h2>
+    <p>
+      이 확장 프로그램은 YouTube에서 좋아요한 영상을 쉽게 찾을 수 있도록 도와줍니다.
+      채널명이나 키워드로 필터링할 수 있어 원하는 영상을 빠르게 찾을 수 있습니다.
+    </p>
+    <h3>주요 기능</h3>
+    <ul>
+      <li>구글 계정으로 로그인하여 YouTube 좋아요 영상 접근</li>
+      <li>채널명으로 좋아요한 영상 필터링</li>
+      <li>제목 또는 설명에 포함된 키워드로 검색</li>
+      <li>깔끔한 UI로 영상 목록 표시</li>
+      <li>확장 프로그램 설정 페이지에서 다양한 옵션 설정</li>
+    </ul>
+  </div>
+  
+  <div class="card">
+    <h2>설치 및 사용법</h2>
+    <p>이 크롬 확장 프로그램을 사용하려면 다음 단계를 따르세요:</p>
+    <ol class="steps">
+      <li>
+        <strong>Google 프로젝트 생성</strong><br>
+        <a href="https://console.developers.google.com/" target="_blank">Google 개발자 콘솔</a>에서 새 프로젝트를 만드세요.
+      </li>
+      <li>
+        <strong>YouTube Data API 활성화</strong><br>
+        라이브러리에서 YouTube Data API v3를 찾아 활성화하세요.
+      </li>
+      <li>
+        <strong>OAuth 동의 화면 설정</strong><br>
+        사용자 인증 정보 > OAuth 동의 화면에서 필요한 정보를 설정하세요. 개발 단계에서는 '내부' 또는 '테스트'로 설정하고 본인 계정을 테스트 사용자로 추가하세요.
+      </li>
+      <li>
+        <strong>클라이언트 ID 생성</strong><br>
+        사용자 인증 정보에서 OAuth 클라이언트 ID를 생성하세요 (유형: '데스크톱 앱' 또는 '기타').
+      </li>
+      <li>
+        <strong>클라이언트 ID 설정</strong><br>
+        manifest.json 파일에서 <code>YOUR_CLIENT_ID_HERE</code> 부분을 받은 클라이언트 ID로 변경하세요.
+      </li>
+      <li>
+        <strong>크롬에 확장 프로그램 로드</strong><br>
+        Chrome 브라우저에서 <code>chrome://extensions</code>로 이동한 후, 개발자 모드를 활성화하고 "압축해제된 확장 프로그램 로드" 버튼을 클릭하여 이 폴더를 선택하세요.
+      </li>
+      <li>
+        <strong>확장 프로그램 사용</strong><br>
+        브라우저 상단의 확장 프로그램 아이콘을 클릭하여 "YouTube 좋아요 영상 필터"를 사용하세요. 구글 계정으로 로그인한 후 좋아요한 영상을 볼 수 있습니다.
+      </li>
+    </ol>
+  </div>
+  
+  <div class="card">
+    <h2>소스 코드 구조</h2>
+    <p>이 확장 프로그램은 다음과 같은 주요 파일로 구성되어 있습니다:</p>
+    <ul>
+      <li><strong>manifest.json</strong> - 확장 프로그램 설정 및 권한</li>
+      <li><strong>popup.html/js/css</strong> - 메인 팝업 인터페이스</li>
+      <li><strong>background.js</strong> - 인증 및 백그라운드 작업 관리</li>
+      <li><strong>options.html/js/css</strong> - 설정 페이지</li>
+      <li><strong>utils.js</strong> - 공통 유틸리티 함수</li>
+      <li><strong>content.js</strong> - YouTube 페이지와의 상호작용</li>
+    </ul>
+    
+    <h3>API 사용</h3>
+    <p>이 확장 프로그램은 다음 API를 사용합니다:</p>
+    <ul>
+      <li>YouTube Data API v3 - 사용자의 좋아요한 영상 가져오기</li>
+      <li>Google OAuth 2.0 - 사용자 인증</li>
+      <li>Chrome Extension API - 스토리지, 메시지 전달, 인증 등</li>
+    </ul>
+  </div>
+  
+  <div class="card">
+    <h2>개발 참고 사항</h2>
+    <p>이 확장 프로그램을 수정하거나 개발할 때 다음 사항을 참고하세요:</p>
+    <ul>
+      <li>JavaScript 모듈 구조로 설계되어 있으며, 각 파일은 특정 기능을 담당합니다.</li>
+      <li>Chrome의 local storage를 활용하여 데이터를 캐싱합니다.</li>
+      <li>YouTube Data API v3 할당량에 주의하세요. 과도한 API 호출은 할당량 제한에 도달할 수 있습니다.</li>
+      <li>사용자 인증 상태는 Chrome의 identity API를 통해 관리됩니다.</li>
+    </ul>
+    
+    <pre>// API 호출 예시
+fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&myRating=like&maxResults=50', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+})</pre>
+  </div>
+  
+  <div class="footer">
+    <p>© 2025 YouTube 좋아요 영상 필터 | 크롬 확장 프로그램</p>
+    <p>이 확장 프로그램은 YouTube 또는 Google과 제휴하거나 지원받지 않습니다.</p>
+  </div>
 </body>
 </html>
