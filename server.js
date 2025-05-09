@@ -11,6 +11,10 @@ const storage = require('./storage');
 const { db } = require('./db');
 const schema = require('./shared/schema');
 
+// 환경 감지 (Replit vs Netlify)
+const isNetlify = process.env.NETLIFY === 'true';
+const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
