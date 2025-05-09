@@ -133,6 +133,13 @@ app.get('/auth/google', passport.authenticate('google', {
   prompt: 'consent'
 }));
 
+// Netlify 함수용 추가 경로
+app.get('/api/auth/google', passport.authenticate('google', { 
+  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
+  accessType: 'offline',
+  prompt: 'consent'
+}));
+
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
