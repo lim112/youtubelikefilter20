@@ -5,6 +5,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const path = require('path');
+const fs = require('fs');
 const serverless = require('serverless-http');
 
 // 데이터베이스 및 스토리지 가져오기
