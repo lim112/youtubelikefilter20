@@ -3,51 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube 좋아요 영상 필터</title>
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>유튜브 좋아요 영상 필터</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <img src="images/logo.svg" alt="유튜브 좋아요 필터 로고" class="logo">
-      <h1>YouTube 좋아요 영상 필터</h1>
-      <p>채널 및 키워드로 좋아요한 YouTube 영상 찾기</p>
-    </div>
-    
-    <div class="auth-section">
-      <div class="auth-card">
-        <h2>시작하기</h2>
-        <p>유튜브에서 좋아요한 영상을 채널과 키워드로 필터링하여 쉽게 찾을 수 있는 웹 애플리케이션입니다.</p>
-        <div class="features">
-          <div class="feature">
-            <i class="fas fa-filter"></i>
-            <p>채널 및 키워드 필터링</p>
-          </div>
-          <div class="feature">
-            <i class="fas fa-clock"></i>
-            <p>영상 길이 및 날짜 필터링</p>
-          </div>
-          <div class="feature">
-            <i class="fas fa-file-export"></i>
-            <p>CSV/JSON 내보내기</p>
+    <header>
+      <div class="logo">
+        <img src="/icons/icon128.svg" alt="로고" class="logo-img">
+        <h1>유튜브 좋아요 영상 필터</h1>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#features">기능</a></li>
+          <li><a href="#how-it-works">사용방법</a></li>
+          <li><a href="#about">소개</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h2>당신이 좋아한 유튜브 영상을<br>쉽게 찾고 관리하세요</h2>
+          <p>좋아요를 누른 모든 영상을 채널별, 키워드별로 필터링하고 검색하세요.</p>
+          <div class="cta-buttons">
+            <a href="/auth/google" class="btn primary">
+              <i class="fab fa-google"></i> Google로 시작하기
+            </a>
+            <div id="auth-error" style="display: none; margin-top: 20px; padding: 10px; background-color: #ffebee; border-radius: 4px; color: #c62828; text-align: center;">
+              <p>인증 오류가 발생했습니다. 다시 로그인해주세요.</p>
+            </div>
           </div>
         </div>
-        <a href="/api/auth/google" class="login-button">
-          <img src="https://developers.google.com/identity/images/btn_google_signin_dark_normal_web.png" alt="Google 계정으로 로그인">
-        </a>
+        <div class="hero-image">
+          <img src="/images/hero-image.svg" alt="앱 미리보기" onerror="this.onerror=null; this.src='/icons/icon128.svg';">
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <h2>주요 기능</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-filter"></i>
+            </div>
+            <h3>채널별 필터링</h3>
+            <p>좋아요한 영상을 채널별로 쉽게 필터링하여 원하는 콘텐츠를 빠르게 찾으세요.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-search"></i>
+            </div>
+            <h3>키워드 검색</h3>
+            <p>제목이나 설명에 포함된 키워드로 검색하여 원하는 영상을 찾으세요.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <h3>기간별 보기</h3>
+            <p>언제 좋아요를 눌렀는지 기억나지 않아도 날짜별로 영상을 찾을 수 있습니다.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-download"></i>
+            </div>
+            <h3>데이터 내보내기</h3>
+            <p>좋아요한 영상 목록을 CSV 또는 JSON 형식으로 내보내기할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="how-it-works">
+        <h2>사용 방법</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Google 계정으로 로그인</h3>
+              <p>YouTube 계정과 연결된 Google 계정으로 간단히 로그인하세요.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>권한 부여</h3>
+              <p>YouTube 좋아요 영상을 가져올 수 있도록 읽기 전용 액세스 권한을 부여하세요.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>좋아요 영상 탐색하기</h3>
+              <p>채널과 키워드로 좋아요한 영상을 필터링하고 정리하세요.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="about">
+        <h2>프로젝트 소개</h2>
+        <p>
+          유튜브 좋아요 영상 필터는 YouTube에서 좋아요를 누른 영상을 효율적으로 관리하기 위해 만들어진 웹 애플리케이션입니다.
+          YouTube API를 사용하여 사용자의 좋아요 영상을 가져오고, 다양한 필터링 기능을 제공합니다.
+          모든 데이터는 사용자의 브라우저 내에서 처리되며, 서버에 저장되지 않습니다.
+        </p>
+        <p>
+          이 프로젝트는 MIT 라이선스 하에 공개되어 있으며, 프로젝트 개선에 함께 참여해 주세요.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="copyright">
+          <p>&copy; 2025 유튜브 좋아요 영상 필터</p>
+          <p class="disclaimer">이 웹사이트는 YouTube나 Google과 제휴하거나 지원받지 않습니다.</p>
+        </div>
+        <div class="footer-nav">
+          <a href="#">이용약관</a>
+          <a href="#">개인정보 처리방침</a>
+        </div>
       </div>
-      <div class="hero-image">
-        <img src="images/dashboard-preview.png" alt="대시보드 미리보기">
-      </div>
-    </div>
-    
-    <div class="footer">
-      <p>&copy; 2025 YouTube 좋아요 영상 필터</p>
-      <p>이 웹사이트는 YouTube 또는 Google과 제휴하거나 지원받지 않습니다.</p>
-    </div>
+    </footer>
   </div>
-  
+
   <script src="js/main.js"></script>
 </body>
 </html>
