@@ -5,6 +5,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const path = require('path');
+const serverless = require('serverless-http');
 
 // 데이터베이스 및 스토리지 가져오기
 const storage = require('./storage');
@@ -49,10 +50,24 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Google OAuth 전략 설정
+// 환경에 따라 콜백 URL 설정
+let callbackURL;
+if (isNetlify) {
+  // Netlify 환경의 콜백 URL
+  callbackURL = process.env.NETLIFY_URL ? `${process.env.NETLIFY_URL}/auth/google/callback` : 
+                                           `${process.env.URL}/auth/google/callback`;
+} else if (isReplit) {
+  // Replit 환경의 콜백 URL
+  callbackURL = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
+} else {
+  // 로컬 개발 환경 (또는 기타)
+  callbackURL = `http://localhost:${PORT}/auth/google/callback`;
+}
+
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback",
+  callbackURL: callbackURL,
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
   accessType: 'offline',  // 리프레시 토큰을 받기 위해 'offline' 설정
   prompt: 'consent'       // 사용자에게 항상 동의 요청하여 리프레시 토큰 발급받기
@@ -234,7 +249,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
-        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
+        callbackURL
       );
       
       // 액세스 토큰 설정
@@ -511,7 +526,7 @@ async function loadRemainingPages(userId, params, nextPageToken, storage) {
     const oauth2Client = new google.auth.OAuth2(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
-      `${process.env.REDIRECT_URI || 'http://localhost:5000'}/auth/google/callback`
+      callbackURL
     );
     
     // 인증된 클라이언트로 YouTube API 초기화
@@ -819,8 +834,22 @@ app.put('/api/settings', isAuthenticated, async (req, res) => {
   }
 });
 
-// 서버 시작
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
-  console.log(`Replit 환경에서 접속 가능한 주소: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-});
+// Netlify 환경인 경우 서버리스 함수로 내보내기 위한 설정
+if (isNetlify) {
+  console.log('Netlify 환경에서 서버리스 함수로 실행합니다.');
+  // 이 앱은 netlify/functions/api.js를 통해 서버리스 함수로 처리됩니다.
+  // server.js에서는 별도 서버를 시작하지 않습니다.
+  
+  // Netlify 함수용 export 구문
+  module.exports = app;
+  module.exports.handler = serverless(app);
+} else {
+  // Replit 또는 기타 환경에서 일반 서버 시작
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
+    
+    if (isReplit) {
+      console.log(`Replit 환경에서 접속 가능한 주소: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+    }
+  });
+}
