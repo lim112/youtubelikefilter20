@@ -9,6 +9,7 @@ node drizzle-push.js
 # 정적 파일 복사
 mkdir -p public
 cp -R index.html public/
+cp -R dashboard.html public/ 2>/dev/null || :
 cp -R public/css public/
 cp -R public/js public/
 cp -R public/images public/ 2>/dev/null || :
