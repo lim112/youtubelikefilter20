@@ -78,8 +78,13 @@ if (isNetlify) {
       `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 
       'workspace.sharehousesiste.repl.co';
       
+  // 콜백 URL 정확히 확인하여 설정
+  // 이 URL이 정확히 Google Cloud Console에 등록된 리디렉션 URI와 일치해야 함
   callbackURL = `https://${replit_domain}/auth/google/callback`;
   console.log('Replit 콜백 URL 설정됨:', callbackURL);
+  
+  // 만약 Google Cloud Console에 다른 URL이 등록되어 있다면 아래 주석을 해제하고 수정하세요
+  // callbackURL = '여기에 Google Cloud Console에 등록된 정확한 리디렉션 URI 입력';
 } else {
   // 로컬 개발 환경 (또는 기타)
   callbackURL = `http://localhost:${PORT}/auth/google/callback`;
