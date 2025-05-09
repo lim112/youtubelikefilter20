@@ -54,14 +54,23 @@ passport.deserializeUser(async (id, done) => {
 let callbackURL;
 if (isNetlify) {
   // Netlify 환경의 콜백 URL
-  callbackURL = process.env.NETLIFY_URL ? `${process.env.NETLIFY_URL}/auth/google/callback` : 
-                                           `${process.env.URL}/auth/google/callback`;
+  callbackURL = process.env.NETLIFY_URL ? 
+      `${process.env.NETLIFY_URL}/.netlify/functions/api/auth/google/callback` : 
+      `${process.env.URL}/.netlify/functions/api/auth/google/callback`;
+  
+  console.log('Netlify 콜백 URL 설정됨:', callbackURL);
 } else if (isReplit) {
-  // Replit 환경의 콜백 URL
-  callbackURL = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
+  // Replit 환경의 콜백 URL - 환경 변수로 확인
+  const replit_domain = process.env.REPL_SLUG && process.env.REPL_OWNER ? 
+      `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 
+      'workspace.sharehousesiste.repl.co';
+      
+  callbackURL = `https://${replit_domain}/auth/google/callback`;
+  console.log('Replit 콜백 URL 설정됨:', callbackURL);
 } else {
   // 로컬 개발 환경 (또는 기타)
   callbackURL = `http://localhost:${PORT}/auth/google/callback`;
+  console.log('로컬 콜백 URL 설정됨:', callbackURL);
 }
 
 passport.use(new GoogleStrategy({
@@ -140,7 +149,16 @@ app.get('/api/auth/google', passport.authenticate('google', {
   prompt: 'consent'
 }));
 
+// 기본 콜백 URL
 app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/dashboard');
+  }
+);
+
+// Netlify 함수용 콜백 URL
+app.get('/.netlify/functions/api/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
     res.redirect('/dashboard');
