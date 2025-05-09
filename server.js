@@ -173,15 +173,10 @@ app.get('/auth/google/callback',
 
 // Netlify 함수용 콜백 URL
 app.get('/.netlify/functions/api/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/' }),
+  passport.authenticate('google', { failureRedirect: '/?error=auth' }),
   (req, res) => {
     console.log('인증 성공: Netlify 콜백 - 대시보드로 리디렉션');
-    // Netlify 환경에서는 루트 경로 기준으로 리디렉션
-    if (isNetlify) {
-      res.redirect('/dashboard');
-    } else {
-      res.redirect('/dashboard');
-    }
+    res.redirect('/dashboard');
   }
 );
 
