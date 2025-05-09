@@ -173,17 +173,32 @@ document.addEventListener('DOMContentLoaded', function() {
    * 사용자 정보 가져오기
    */
   async function getUserInfo() {
-    const response = await fetch('/api/user');
-    const data = await response.json();
-    
-    if (!data.isLoggedIn) {
-      // 로그인되지 않은 경우 메인 페이지로 리디렉션
-      window.location.href = '/';
-      return;
+    try {
+      console.log('사용자 정보 요청 중...');
+      const response = await fetch('/api/user');
+      
+      if (!response.ok) {
+        throw new Error(`서버 응답 오류: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('사용자 정보 응답:', data);
+      
+      if (!data.isLoggedIn) {
+        console.log('로그인되지 않음, 홈으로 리디렉션');
+        // 로그인되지 않은 경우 메인 페이지로 리디렉션
+        window.location.href = '/';
+        return;
+      }
+      
+      currentUser = data.user;
+      userName.textContent = currentUser.displayName;
+      console.log('사용자 정보 로드 완료:', currentUser.displayName);
+    } catch (error) {
+      console.error('사용자 정보 가져오기 오류:', error);
+      showError(`사용자 정보를 가져오는데 실패했습니다: ${error.message}`);
+      authErrorHelp.classList.remove('hidden');
     }
-    
-    currentUser = data.user;
-    userName.textContent = currentUser.displayName;
   }
   
   /**
@@ -210,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showLoading();
     
     try {
+      console.log(`영상 데이터 요청: pageToken=${pageToken}, refresh=${refresh}, loadThumbnails=${loadThumbnails}`);
       let url = '/api/liked-videos';
       const params = new URLSearchParams();
       
@@ -257,7 +273,13 @@ document.addEventListener('DOMContentLoaded', function() {
         url += `?${params.toString()}`;
       }
       
-      const response = await fetch(url);
+      console.log('영상 데이터 요청 URL:', url);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json'
+        },
+        credentials: 'same-origin' // 쿠키와 인증 헤더 포함
+      });
       
       if (!response.ok) {
         throw new Error(`API 오류: ${response.status}`);

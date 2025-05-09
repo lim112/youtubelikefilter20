@@ -229,9 +229,25 @@ app.get('/api/videos/metadata', isAuthenticated, async (req, res) => {
 
 // 대시보드 페이지
 app.get('/dashboard', (req, res) => {
+  console.log('대시보드 페이지 요청:', {
+    path: req.path,
+    authenticated: req.isAuthenticated(),
+    userAgent: req.headers['user-agent']
+  });
+
   if (req.isAuthenticated()) {
-    console.log('대시보드 페이지 요청: 인증됨');
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+    const dashboardPath = path.join(__dirname, 'public', 'dashboard.html');
+    console.log('대시보드 파일 경로:', dashboardPath);
+    console.log('파일 존재 여부:', fs.existsSync(dashboardPath));
+    
+    res.sendFile(dashboardPath, (err) => {
+      if (err) {
+        console.error('대시보드 파일 전송 오류:', err);
+        res.status(err.status).end();
+      } else {
+        console.log('대시보드 파일 전송 성공');
+      }
+    });
   } else {
     console.log('대시보드 페이지 요청: 인증되지 않음, 홈으로 리디렉션');
     res.redirect('/');
