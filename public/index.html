@@ -181,6 +181,17 @@
   </div>
 
   <script>
+    /**
+     * API URL 가져오기 (Netlify 환경에서는 경로 접두사 추가)
+     * @param {string} endpoint - API 엔드포인트 (첫 번째 / 포함)
+     * @returns {string} 완전한 API URL
+     */
+    function getApiUrl(endpoint) {
+      // Netlify 환경에서는 /.netlify/functions/api 접두사 사용
+      const isNetlify = window.location.hostname.includes('netlify.app');
+      return isNetlify ? `/.netlify/functions/api${endpoint}` : endpoint;
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
       // URL에서 오류 메시지 파라미터 확인
       const urlParams = new URLSearchParams(window.location.search);
@@ -203,8 +214,8 @@
       // 로그인 버튼 이벤트 리스너
       document.getElementById('login-button').addEventListener('click', function() {
         // Netlify와 Replit 환경에서 모두 작동하도록 경로 설정
-        const isNetlify = window.location.hostname.includes('netlify.app');
-        const authUrl = isNetlify ? '/.netlify/functions/api/auth/google' : '/api/auth/google';
+        const authUrl = getApiUrl('/api/auth/google');
+        console.log('로그인 URL:', authUrl);
         window.location.href = authUrl;
       });
     });
