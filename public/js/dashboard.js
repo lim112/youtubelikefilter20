@@ -114,19 +114,10 @@ document.addEventListener('DOMContentLoaded', function() {
   async function fetchMetadata() {
     try {
       console.log('메타데이터 가져오는 중...');
-      const apiUrl = getApiUrl('/api/videos/metadata');
-      console.log('메타데이터 API URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        credentials: 'same-origin'
-      });
+      const response = await fetch('/api/videos/metadata');
       
       if (!response.ok) {
-        throw new Error(`메타데이터 가져오기 실패: ${response.status} ${response.statusText}`);
+        throw new Error('메타데이터 가져오기 실패');
       }
       
       const data = await response.json();
@@ -179,55 +170,20 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   /**
-   * API URL 가져오기 (Netlify 환경에서는 경로 접두사 추가)
-   * @param {string} endpoint - API 엔드포인트 (첫 번째 / 포함)
-   * @returns {string} 완전한 API URL
-   */
-  function getApiUrl(endpoint) {
-    // Netlify 환경에서는 /.netlify/functions/api 접두사 사용
-    const isNetlify = window.location.hostname.includes('netlify.app');
-    return isNetlify ? `/.netlify/functions/api${endpoint}` : endpoint;
-  }
-
-  /**
    * 사용자 정보 가져오기
    */
   async function getUserInfo() {
-    try {
-      console.log('사용자 정보 요청 중...');
-      const apiUrl = getApiUrl('/api/user');
-      console.log('API URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        credentials: 'same-origin' // 쿠키와 인증 헤더 포함
-      });
-      
-      if (!response.ok) {
-        throw new Error(`서버 응답 오류: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('사용자 정보 응답:', data);
-      
-      if (!data.isLoggedIn) {
-        console.log('로그인되지 않음, 홈으로 리디렉션');
-        // 로그인되지 않은 경우 메인 페이지로 리디렉션
-        window.location.href = '/';
-        return;
-      }
-      
-      currentUser = data.user;
-      userName.textContent = currentUser.displayName;
-      console.log('사용자 정보 로드 완료:', currentUser.displayName);
-    } catch (error) {
-      console.error('사용자 정보 가져오기 오류:', error);
-      showError(`사용자 정보를 가져오는데 실패했습니다: ${error.message}`);
-      authErrorHelp.classList.remove('hidden');
+    const response = await fetch('/api/user');
+    const data = await response.json();
+    
+    if (!data.isLoggedIn) {
+      // 로그인되지 않은 경우 메인 페이지로 리디렉션
+      window.location.href = '/';
+      return;
     }
+    
+    currentUser = data.user;
+    userName.textContent = currentUser.displayName;
   }
   
   /**
@@ -235,16 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   async function logout() {
     try {
-      const apiUrl = getApiUrl('/api/logout');
-      console.log('로그아웃 요청 URL:', apiUrl);
-      
-      await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        credentials: 'same-origin'
-      });
+      await fetch('/api/logout');
       window.location.href = '/';
     } catch (error) {
       console.error('로그아웃 오류:', error);
@@ -263,9 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showLoading();
     
     try {
-      console.log(`영상 데이터 요청: pageToken=${pageToken}, refresh=${refresh}, loadThumbnails=${loadThumbnails}`);
-      let url = getApiUrl('/api/liked-videos');
-      console.log('영상 데이터 기본 URL:', url);
+      let url = '/api/liked-videos';
       const params = new URLSearchParams();
       
       if (pageToken) {
@@ -312,13 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         url += `?${params.toString()}`;
       }
       
-      console.log('영상 데이터 요청 URL:', url);
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json'
-        },
-        credentials: 'same-origin' // 쿠키와 인증 헤더 포함
-      });
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`API 오류: ${response.status}`);
@@ -334,13 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // 3초 후 로그인 페이지로 리디렉션
           setTimeout(() => {
-            // Netlify 환경에서는 다른 로그인 URL 사용
-            const isNetlify = window.location.hostname.includes('netlify.app');
-            const loginUrl = isNetlify 
-              ? '/.netlify/functions/api/auth/google' 
-              : '/auth/google';
-            console.log('로그인 URL로 리디렉션:', loginUrl);
-            window.location.href = loginUrl;
+            window.location.href = '/auth/google';
           }, 3000);
           
           return;

@@ -55,8 +55,8 @@ console.log('\n📄 필수 파일 확인 중...');
 const requiredFiles = [
   'netlify.toml',
   'netlify/functions/api.js',
-  'public/index.html',
-  'public/dashboard.html'
+  'netlify/_redirects',
+  'public/index.html'
 ];
 
 const missingFiles = [];

@@ -35,34 +35,11 @@ document.addEventListener('DOMContentLoaded', function() {
   checkLoginStatus();
 });
 
-// API URL 가져오기 (Netlify 환경에서는 경로 접두사 추가)
-function getApiUrl(endpoint) {
-  // Netlify 환경에서는 /.netlify/functions/api 접두사 사용
-  const isNetlify = window.location.hostname.includes('netlify.app');
-  return isNetlify ? `/.netlify/functions/api${endpoint}` : endpoint;
-}
-
 // 로그인 상태 확인 함수
 async function checkLoginStatus() {
   try {
-    const apiUrl = getApiUrl('/api/user');
-    console.log('로그인 상태 확인 URL:', apiUrl);
-    
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      },
-      credentials: 'same-origin'
-    });
-    
-    if (!response.ok) {
-      console.error('로그인 상태 확인 응답 오류:', response.status, response.statusText);
-      return;
-    }
-    
+    const response = await fetch('/api/user');
     const data = await response.json();
-    console.log('로그인 상태 응답:', data);
     
     // 이미 로그인되어 있으면 대시보드로 리디렉션
     if (data.isLoggedIn) {

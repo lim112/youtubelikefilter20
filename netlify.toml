@@ -1,7 +1,7 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  command = "chmod +x ./build.sh && ./build.sh"
+  command = "npm run build"
 
 [dev]
   publish = "public"
@@ -10,12 +10,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/auth/*"
-  to = "/.netlify/functions/api/auth/:splat"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 [[redirects]]

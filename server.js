@@ -5,17 +5,11 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const path = require('path');
-const fs = require('fs');
-const serverless = require('serverless-http');
 
 // 데이터베이스 및 스토리지 가져오기
 const storage = require('./storage');
 const { db } = require('./db');
 const schema = require('./shared/schema');
-
-// 환경 감지 (Replit vs Netlify)
-const isNetlify = process.env.NETLIFY === 'true';
-const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,25 +18,13 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Netlify와 Replit 환경에 따른 세션 설정
-const sessionConfig = {
+app.use(session({
   secret: process.env.SESSION_SECRET || 'youtube_filter_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: isNetlify, // Netlify는 HTTPS를 사용하므로 secure: true
-    maxAge: 1000 * 60 * 60 * 24 // 세션 유효 기간: 1일
-  },
+  cookie: { secure: false },
   store: storage.sessionStore
-};
-
-console.log('세션 설정:', {
-  secure: sessionConfig.cookie.secure,
-  environment: isNetlify ? 'Netlify' : (isReplit ? 'Replit' : 'Local')
-});
-
-app.use(session(sessionConfig));
+}));
 
 // Passport 설정
 app.use(passport.initialize());
@@ -63,38 +45,10 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Google OAuth 전략 설정
-// 환경에 따라 콜백 URL 설정
-let callbackURL;
-if (isNetlify) {
-  // Netlify 환경의 콜백 URL
-  callbackURL = process.env.NETLIFY_URL ? 
-      `${process.env.NETLIFY_URL}/.netlify/functions/api/auth/google/callback` : 
-      `${process.env.URL}/.netlify/functions/api/auth/google/callback`;
-  
-  console.log('Netlify 콜백 URL 설정됨:', callbackURL);
-} else if (isReplit) {
-  // Replit 환경의 콜백 URL - 환경 변수로 확인
-  const replit_domain = process.env.REPL_SLUG && process.env.REPL_OWNER ? 
-      `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 
-      'workspace.sharehousesiste.repl.co';
-      
-  // 콜백 URL 정확히 확인하여 설정
-  // 이 URL이 정확히 Google Cloud Console에 등록된 리디렉션 URI와 일치해야 함
-  callbackURL = `https://${replit_domain}/auth/google/callback`;
-  console.log('Replit 콜백 URL 설정됨:', callbackURL);
-  
-  // 만약 Google Cloud Console에 다른 URL이 등록되어 있다면 아래 주석을 해제하고 수정하세요
-  // callbackURL = '여기에 Google Cloud Console에 등록된 정확한 리디렉션 URI 입력';
-} else {
-  // 로컬 개발 환경 (또는 기타)
-  callbackURL = `http://localhost:${PORT}/auth/google/callback`;
-  console.log('로컬 콜백 URL 설정됨:', callbackURL);
-}
-
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: callbackURL,
+  callbackURL: "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback",
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
   accessType: 'offline',  // 리프레시 토큰을 받기 위해 'offline' 설정
   prompt: 'consent'       // 사용자에게 항상 동의 요청하여 리프레시 토큰 발급받기
@@ -160,27 +114,9 @@ app.get('/auth/google', passport.authenticate('google', {
   prompt: 'consent'
 }));
 
-// Netlify 함수용 추가 경로
-app.get('/api/auth/google', passport.authenticate('google', { 
-  scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
-  accessType: 'offline',
-  prompt: 'consent'
-}));
-
-// 기본 콜백 URL
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    console.log('인증 성공: 일반 콜백 - 대시보드로 리디렉션');
-    res.redirect('/dashboard');
-  }
-);
-
-// Netlify 함수용 콜백 URL
-app.get('/.netlify/functions/api/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/?error=auth' }),
-  (req, res) => {
-    console.log('인증 성공: Netlify 콜백 - 대시보드로 리디렉션');
     res.redirect('/dashboard');
   }
 );
@@ -230,27 +166,9 @@ app.get('/api/videos/metadata', isAuthenticated, async (req, res) => {
 
 // 대시보드 페이지
 app.get('/dashboard', (req, res) => {
-  console.log('대시보드 페이지 요청:', {
-    path: req.path,
-    authenticated: req.isAuthenticated(),
-    userAgent: req.headers['user-agent']
-  });
-
   if (req.isAuthenticated()) {
-    const dashboardPath = path.join(__dirname, 'public', 'dashboard.html');
-    console.log('대시보드 파일 경로:', dashboardPath);
-    console.log('파일 존재 여부:', fs.existsSync(dashboardPath));
-    
-    res.sendFile(dashboardPath, (err) => {
-      if (err) {
-        console.error('대시보드 파일 전송 오류:', err);
-        res.status(err.status).end();
-      } else {
-        console.log('대시보드 파일 전송 성공');
-      }
-    });
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
   } else {
-    console.log('대시보드 페이지 요청: 인증되지 않음, 홈으로 리디렉션');
     res.redirect('/');
   }
 });
@@ -312,7 +230,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
-        callbackURL
+        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
       );
       
       // 액세스 토큰 설정
@@ -589,7 +507,7 @@ async function loadRemainingPages(userId, params, nextPageToken, storage) {
     const oauth2Client = new google.auth.OAuth2(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
-      callbackURL
+      `${process.env.REDIRECT_URI || 'http://localhost:5000'}/auth/google/callback`
     );
     
     // 인증된 클라이언트로 YouTube API 초기화
@@ -897,22 +815,8 @@ app.put('/api/settings', isAuthenticated, async (req, res) => {
   }
 });
 
-// Netlify 환경인 경우 서버리스 함수로 내보내기 위한 설정
-if (isNetlify) {
-  console.log('Netlify 환경에서 서버리스 함수로 실행합니다.');
-  // 이 앱은 netlify/functions/api.js를 통해 서버리스 함수로 처리됩니다.
-  // server.js에서는 별도 서버를 시작하지 않습니다.
-  
-  // Netlify 함수용 export 구문
-  module.exports = app;
-  module.exports.handler = serverless(app);
-} else {
-  // Replit 또는 기타 환경에서 일반 서버 시작
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
-    
-    if (isReplit) {
-      console.log(`Replit 환경에서 접속 가능한 주소: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-    }
-  });
-}
+// 서버 시작
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`서버가 http://0.0.0.0:${PORT} 에서 실행 중입니다.`);
+  console.log(`Replit 환경에서 접속 가능한 주소: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+});

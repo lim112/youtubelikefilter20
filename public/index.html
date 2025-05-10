@@ -3,222 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube 좋아요 필터 - 로그인</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Roboto', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f9f9f9;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    
-    .login-card {
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      padding: 30px;
-      max-width: 500px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #ff0000;
-      margin-bottom: 20px;
-    }
-    
-    h1 {
-      font-size: 24px;
-      margin-bottom: 15px;
-      color: #333;
-    }
-    
-    p {
-      margin-bottom: 25px;
-      color: #666;
-    }
-    
-    .login-button {
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      transition: background-color 0.2s;
-    }
-    
-    .login-button:hover {
-      background-color: #357ae8;
-    }
-    
-    .login-button img {
-      margin-right: 10px;
-      width: 20px;
-      height: 20px;
-    }
-    
-    .error-message {
-      background-color: #ffebee;
-      color: #c62828;
-      padding: 10px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      display: none;
-    }
-    
-    .footer {
-      text-align: center;
-      padding: 20px;
-      color: #777;
-      font-size: 14px;
-      background-color: white;
-      border-top: 1px solid #eee;
-    }
-    
-    .features {
-      display: flex;
-      flex-wrap: wrap;
-      margin: 30px 0;
-      gap: 15px;
-      justify-content: center;
-    }
-    
-    .feature {
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      padding: 15px;
-      flex: 1;
-      min-width: 200px;
-      max-width: 300px;
-      text-align: center;
-    }
-    
-    .feature i {
-      font-size: 36px;
-      color: #4285F4;
-      margin-bottom: 15px;
-    }
-    
-    .feature h3 {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    
-    @media (max-width: 768px) {
-      .container {
-        padding: 20px;
-      }
-      
-      .login-card {
-        padding: 20px;
-      }
-    }
-  </style>
+  <title>유튜브 좋아요 영상 필터</title>
+  <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
   <div class="container">
-    <div class="login-card">
-      <div class="logo">YouTube 좋아요 필터</div>
-      <h1>내 YouTube 좋아요 목록을 관리하세요</h1>
-      <p>YouTube 계정에 로그인하여 좋아요 누른 동영상을 검색, 필터링하고 쉽게 찾아보세요.</p>
-      
-      <div id="error-message" class="error-message"></div>
-      
-      <button id="login-button" class="login-button">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google 로고">
-        Google 계정으로 로그인
-      </button>
-    </div>
-    
-    <div class="features">
-      <div class="feature">
-        <i class="fas fa-search"></i>
-        <h3>쉬운 검색</h3>
-        <p>키워드나 채널 이름으로 좋아요 누른 동영상을 빠르게 찾아보세요.</p>
+    <header>
+      <div class="logo">
+        <img src="/icons/icon128.svg" alt="로고" class="logo-img">
+        <h1>유튜브 좋아요 영상 필터</h1>
       </div>
-      <div class="feature">
-        <i class="fas fa-filter"></i>
-        <h3>필터링 옵션</h3>
-        <p>채널별, 업로드 날짜별, 영상 길이별로 필터링하여 원하는 영상을 찾으세요.</p>
+      <nav>
+        <ul>
+          <li><a href="#features">기능</a></li>
+          <li><a href="#how-it-works">사용방법</a></li>
+          <li><a href="#about">소개</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h2>당신이 좋아한 유튜브 영상을<br>쉽게 찾고 관리하세요</h2>
+          <p>좋아요를 누른 모든 영상을 채널별, 키워드별로 필터링하고 검색하세요.</p>
+          <div class="cta-buttons">
+            <a href="/auth/google" class="btn primary">
+              <i class="fab fa-google"></i> Google로 시작하기
+            </a>
+            <div id="auth-error" style="display: none; margin-top: 20px; padding: 10px; background-color: #ffebee; border-radius: 4px; color: #c62828; text-align: center;">
+              <p>인증 오류가 발생했습니다. 다시 로그인해주세요.</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img src="/images/hero-image.svg" alt="앱 미리보기" onerror="this.onerror=null; this.src='/icons/icon128.svg';">
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <h2>주요 기능</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-filter"></i>
+            </div>
+            <h3>채널별 필터링</h3>
+            <p>좋아요한 영상을 채널별로 쉽게 필터링하여 원하는 콘텐츠를 빠르게 찾으세요.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-search"></i>
+            </div>
+            <h3>키워드 검색</h3>
+            <p>제목이나 설명에 포함된 키워드로 검색하여 원하는 영상을 찾으세요.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <h3>기간별 보기</h3>
+            <p>언제 좋아요를 눌렀는지 기억나지 않아도 날짜별로 영상을 찾을 수 있습니다.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="fas fa-download"></i>
+            </div>
+            <h3>데이터 내보내기</h3>
+            <p>좋아요한 영상 목록을 CSV 또는 JSON 형식으로 내보내기할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="how-it-works">
+        <h2>사용 방법</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Google 계정으로 로그인</h3>
+              <p>YouTube 계정과 연결된 Google 계정으로 간단히 로그인하세요.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>권한 부여</h3>
+              <p>YouTube 좋아요 영상을 가져올 수 있도록 읽기 전용 액세스 권한을 부여하세요.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>좋아요 영상 탐색하기</h3>
+              <p>채널과 키워드로 좋아요한 영상을 필터링하고 정리하세요.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="about">
+        <h2>프로젝트 소개</h2>
+        <p>
+          유튜브 좋아요 영상 필터는 YouTube에서 좋아요를 누른 영상을 효율적으로 관리하기 위해 만들어진 웹 애플리케이션입니다.
+          YouTube API를 사용하여 사용자의 좋아요 영상을 가져오고, 다양한 필터링 기능을 제공합니다.
+          모든 데이터는 사용자의 브라우저 내에서 처리되며, 서버에 저장되지 않습니다.
+        </p>
+        <p>
+          이 프로젝트는 MIT 라이선스 하에 공개되어 있으며, 프로젝트 개선에 함께 참여해 주세요.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="copyright">
+          <p>&copy; 2025 유튜브 좋아요 영상 필터</p>
+          <p class="disclaimer">이 웹사이트는 YouTube나 Google과 제휴하거나 지원받지 않습니다.</p>
+        </div>
+        <div class="footer-nav">
+          <a href="#">이용약관</a>
+          <a href="#">개인정보 처리방침</a>
+        </div>
       </div>
-      <div class="feature">
-        <i class="fas fa-file-export"></i>
-        <h3>내보내기</h3>
-        <p>좋아요 목록을 CSV나 JSON으로 내보내 분석하거나 백업할 수 있습니다.</p>
-      </div>
-    </div>
-  </div>
-  
-  <div class="footer">
-    <p>© 2025 YouTube 좋아요 필터 | 모든 내용은 개인 정보 보호를 준수합니다.</p>
+    </footer>
   </div>
 
-  <script>
-    /**
-     * API URL 가져오기 (Netlify 환경에서는 경로 접두사 추가)
-     * @param {string} endpoint - API 엔드포인트 (첫 번째 / 포함)
-     * @returns {string} 완전한 API URL
-     */
-    function getApiUrl(endpoint) {
-      // Netlify 환경에서는 /.netlify/functions/api 접두사 사용
-      const isNetlify = window.location.hostname.includes('netlify.app');
-      return isNetlify ? `/.netlify/functions/api${endpoint}` : endpoint;
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      // URL에서 오류 메시지 파라미터 확인
-      const urlParams = new URLSearchParams(window.location.search);
-      const error = urlParams.get('error');
-      
-      if (error) {
-        const errorMessage = document.getElementById('error-message');
-        
-        if (error === 'auth') {
-          errorMessage.textContent = '인증에 실패했습니다. 다시 로그인해 주세요.';
-        } else if (error === 'permission') {
-          errorMessage.textContent = 'YouTube API 접근 권한이 필요합니다.';
-        } else {
-          errorMessage.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
-        }
-        
-        errorMessage.style.display = 'block';
-      }
-      
-      // 로그인 버튼 이벤트 리스너
-      document.getElementById('login-button').addEventListener('click', function() {
-        // Netlify와 Replit 환경에서 모두 작동하도록 경로 설정
-        const authUrl = getApiUrl('/api/auth/google');
-        console.log('로그인 URL:', authUrl);
-        window.location.href = authUrl;
-      });
-    });
-  </script>
+  <script src="js/main.js"></script>
 </body>
 </html>
