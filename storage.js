@@ -15,8 +15,11 @@ class Storage {
     const session = require('express-session');
     const PostgresStore = connectPg(session);
     
+    // Supabase 연결 문자열을 직접 설정
+    const DATABASE_URL = "postgresql://postgres.hdcpbffbkfcbltenmynl:S!!sksgustn0853@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres";
+    
     this.sessionStore = new PostgresStore({
-      conString: process.env.DATABASE_URL,
+      conString: DATABASE_URL,
       createTableIfMissing: true
     });
   }
