@@ -225,12 +225,12 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     const dbVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter, loadThumbnails);
     
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
-    if (req.query.refresh === 'true' || dbVideos.videos.length === 0) {
+    if (req.query.refresh === 'true' || dbVideos.length === 0) {
       // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
       const oauth2Client = new google.auth.OAuth2(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
-        `https://${process.env.REPLIT_DEV_DOMAIN || 'workspace.sharehousesiste.repl.co'}/auth/google/callback`
+        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
       );
       
       // 액세스 토큰 설정
@@ -322,9 +322,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             if (req.xhr || req.headers.accept.indexOf('json') > -1) {
               // API 요청인 경우 JSON 응답
               return res.json({
-                items: dbVideos.videos,
+                items: dbVideos,
                 pageInfo: {
-                  totalResults: dbVideos.total,
+                  totalResults: dbVideos.length,
                   resultsPerPage: limit
                 },
                 fromCache: true,
@@ -352,7 +352,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
               const prevPageOffset = offset - limit >= 0 ? offset - limit : null;
               
               return res.json({
-                items: dbVideos.videos,
+                items: dbVideos,
                 pageInfo: {
                   totalResults: totalCount,
                   resultsPerPage: limit,
@@ -368,9 +368,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
               
               // 카운트 조회 오류 시 기본 응답
               return res.json({
-                items: dbVideos.videos,
+                items: dbVideos,
                 pageInfo: {
-                  totalResults: dbVideos.total,
+                  totalResults: dbVideos.length,
                   resultsPerPage: limit,
                   currentOffset: offset
                 },
