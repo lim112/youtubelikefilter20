@@ -896,6 +896,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     info.appendChild(datesContainer);
     
+    // 태그(키워드) 정보 추가
+    const tags = isYoutubeApi ? video.snippet.tags : video.tags;
+    if (tags && tags.length > 0) {
+      const tagsContainer = document.createElement('div');
+      tagsContainer.className = 'video-tags';
+      
+      const tagsLabel = document.createElement('div');
+      tagsLabel.className = 'tags-label';
+      tagsLabel.textContent = '키워드:';
+      tagsContainer.appendChild(tagsLabel);
+      
+      const tagsContent = document.createElement('div');
+      tagsContent.className = 'tags-content';
+      
+      // 최대 5개 태그만 표시
+      const displayTags = tags.slice(0, 5);
+      displayTags.forEach((tag, index) => {
+        const tagSpan = document.createElement('span');
+        tagSpan.className = 'tag';
+        tagSpan.textContent = tag;
+        tagsContent.appendChild(tagSpan);
+        
+        // 마지막 태그가 아니면 구분자 추가
+        if (index < displayTags.length - 1) {
+          const separator = document.createElement('span');
+          separator.className = 'tag-separator';
+          separator.textContent = '•';
+          tagsContent.appendChild(separator);
+        }
+      });
+      
+      // 표시되지 않은 태그가 있으면 '...' 추가
+      if (tags.length > 5) {
+        const moreTag = document.createElement('span');
+        moreTag.className = 'more-tags';
+        moreTag.textContent = `+${tags.length - 5}개 더`;
+        tagsContent.appendChild(moreTag);
+      }
+      
+      tagsContainer.appendChild(tagsContent);
+      info.appendChild(tagsContainer);
+    }
+    
     info.appendChild(stats);
     
     // 클릭 이벤트로 유튜브 페이지 열기

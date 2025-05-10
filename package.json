@@ -20,6 +20,7 @@
     "googleapis": "^148.0.0",
     "netlify-cli": "^21.1.0",
     "netlify-lambda": "^2.0.16",
+    "openai": "^4.98.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.15.6",
