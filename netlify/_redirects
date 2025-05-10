@@ -1,3 +1,0 @@
-# Netlify 리다이렉트 규칙
-/api/*  /.netlify/functions/api/:splat  200
-/*      /index.html                     200
