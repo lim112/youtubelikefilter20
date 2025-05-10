@@ -225,12 +225,12 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
     const dbVideos = await storage.getLikedVideos(req.user.id, limit, offset, filter, loadThumbnails);
     
     // API에서 새 데이터 가져오기 (새로고침 요청 또는 데이터가 없는 경우)
-    if (req.query.refresh === 'true' || dbVideos.length === 0) {
+    if (req.query.refresh === 'true' || dbVideos.videos.length === 0) {
       // OAuth 인증을 사용하여 YouTube API 클라이언트 생성
       const oauth2Client = new google.auth.OAuth2(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
-        "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback"
+        `https://${process.env.REPLIT_DEV_DOMAIN || 'workspace.sharehousesiste.repl.co'}/auth/google/callback`
       );
       
       // 액세스 토큰 설정
