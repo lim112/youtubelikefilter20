@@ -368,9 +368,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
               
               // 카운트 조회 오류 시 기본 응답
               return res.json({
-                items: dbVideos,
+                items: dbVideos.videos,
                 pageInfo: {
-                  totalResults: dbVideos.length,
+                  totalResults: dbVideos.total,
                   resultsPerPage: limit,
                   currentOffset: offset
                 },
