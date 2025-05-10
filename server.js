@@ -322,9 +322,9 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
             if (req.xhr || req.headers.accept.indexOf('json') > -1) {
               // API 요청인 경우 JSON 응답
               return res.json({
-                items: dbVideos,
+                items: dbVideos.videos,
                 pageInfo: {
-                  totalResults: dbVideos.length,
+                  totalResults: dbVideos.total,
                   resultsPerPage: limit
                 },
                 fromCache: true,
@@ -352,7 +352,7 @@ app.get('/api/liked-videos', isAuthenticated, async (req, res) => {
               const prevPageOffset = offset - limit >= 0 ? offset - limit : null;
               
               return res.json({
-                items: dbVideos,
+                items: dbVideos.videos,
                 pageInfo: {
                   totalResults: totalCount,
                   resultsPerPage: limit,
