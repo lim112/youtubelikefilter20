@@ -4,7 +4,7 @@ modules = ["nodejs-20", "python-3.11"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "YouTubeFilter"
 
 [[workflows.workflow]]
 name = "Project"
