@@ -897,7 +897,7 @@ document.addEventListener('DOMContentLoaded', function() {
     info.appendChild(datesContainer);
     
     // 태그(키워드) 정보 추가
-    const tags = isYoutubeApi ? video.snippet.tags : video.tags;
+    const tags = isYoutubeApi ? video.snippet.tags : (video.metadata?.tags || []);
     if (tags && tags.length > 0) {
       const tagsContainer = document.createElement('div');
       tagsContainer.className = 'video-tags';

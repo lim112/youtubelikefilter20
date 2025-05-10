@@ -104,7 +104,8 @@ class Storage {
           viewCount: likedVideos.viewCount,
           likeCount: likedVideos.likeCount,
           createdAt: likedVideos.createdAt,
-          updatedAt: likedVideos.updatedAt
+          updatedAt: likedVideos.updatedAt,
+          metadata: likedVideos.metadata
         }).from(likedVideos);
       }
       
