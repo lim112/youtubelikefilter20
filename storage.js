@@ -247,13 +247,10 @@ class Storage {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      // 검색어 필터 적용 (제목 또는 설명에 포함)
+      // 검색어 필터 적용 (제목에만 포함)
       if (filter.search) {
         query = query.where(
-          or(
-            like(likedVideos.title, `%${filter.search}%`),
-            like(likedVideos.description, `%${filter.search}%`)
-          )
+          like(likedVideos.title, `%${filter.search}%`)
         );
       }
       
