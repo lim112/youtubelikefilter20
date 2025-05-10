@@ -28,7 +28,7 @@ class Storage {
       return user;
     } catch (error) {
       console.error('사용자 조회 오류:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -37,18 +37,27 @@ class Storage {
       const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
       return user;
     } catch (error) {
-      console.error('Google ID로 사용자 조회 오류:', error);
-      return null;
+      console.error('사용자 조회 오류:', error);
+      throw error;
     }
   }
 
   async createUser(userData) {
     try {
-      const [newUser] = await db.insert(users).values(userData).returning();
-      return newUser;
+      // 사용자 생성
+      const [user] = await db.insert(users).values(userData).returning();
+      
+      // 기본 설정 생성
+      await this.createUserSettings(user.id, {
+        theme: 'light',
+        itemsPerPage: 100,
+        defaultView: 'grid'
+      });
+      
+      return user;
     } catch (error) {
       console.error('사용자 생성 오류:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -56,17 +65,17 @@ class Storage {
     try {
       const [updatedUser] = await db
         .update(users)
-        .set({...userData, updatedAt: new Date()})
+        .set(userData)
         .where(eq(users.id, id))
         .returning();
       return updatedUser;
     } catch (error) {
       console.error('사용자 업데이트 오류:', error);
-      return null;
+      throw error;
     }
   }
 
-  // 좋아요한 영상 관련 메서드
+  // 좋아요 영상 관련 메서드
   async getLikedVideos(userId, limit = 100, offset = 0, filter = {}, loadThumbnails = true) {
     try {
       // 기본 정렬 설정 (기본값: 게시일 내림차순)
@@ -110,21 +119,16 @@ class Storage {
       }
       
       // 공통 쿼리 조건 추가
-      query = query
-        .where(eq(likedVideos.userId, userId))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(orderByClause);
+      query = query.where(eq(likedVideos.userId, userId));
       
-      // 채널 필터 적용
       if (filter.channelId) {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      // 검색어 필터 적용 (제목에만 포함)
+      // 검색어 필터 적용 (제목에만 포함, 대소문자 구분 없음)
       if (filter.search) {
         query = query.where(
-          like(likedVideos.title, `%${filter.search}%`)
+          like(sql`LOWER(${likedVideos.title})`, `%${filter.search.toLowerCase()}%`)
         );
       }
       
@@ -148,109 +152,127 @@ class Storage {
         }
       }
       
-      // 영상 길이 필터 적용
+      // 기간 필터 적용
       if (filter.duration) {
-        // 영상 길이 필터링은 ISO 8601 형식을 사용하므로 쿼리에 맞게 조건을 작성
-        // 여기서는 간단한 문자열 비교로 구현
+        let durationSeconds;
+        
         if (filter.duration === 'short') {
-          // 4분 미만 (PT4M 미만)
-          query = query.where(sql`${likedVideos.duration} < 'PT4M'`);
+          // 4분 미만
+          durationSeconds = 4 * 60;
+          query = query.where(sql`${likedVideos.duration} < ${durationSeconds}`);
         } else if (filter.duration === 'medium') {
-          // 4-20분 (PT4M 이상 PT20M 이하)
-          query = query.where(sql`${likedVideos.duration} >= 'PT4M' AND ${likedVideos.duration} <= 'PT20M'`);
+          // 4분 이상 20분 미만
+          const minSeconds = 4 * 60;
+          const maxSeconds = 20 * 60;
+          query = query.where(
+            and(
+              sql`${likedVideos.duration} >= ${minSeconds}`,
+              sql`${likedVideos.duration} < ${maxSeconds}`
+            )
+          );
         } else if (filter.duration === 'long') {
-          // 20분 초과 (PT20M 초과)
-          query = query.where(sql`${likedVideos.duration} > 'PT20M'`);
+          // 20분 이상
+          durationSeconds = 20 * 60;
+          query = query.where(sql`${likedVideos.duration} >= ${durationSeconds}`);
         }
       }
       
-      // 디버깅 로그 추가
-      console.log(`DB 쿼리 실행: limit=${limit}, offset=${offset}, loadThumbnails=${loadThumbnails}`);
+      // 정렬 적용
+      query = query.orderBy(orderByClause);
       
-      const videos = await query;
-      console.log(`DB에서 ${videos.length}개 비디오 조회됨${loadThumbnails ? '' : ' (메타데이터만)'}`);
-      return videos;
+      // 페이지네이션 적용
+      const videos = await query.limit(limit).offset(offset);
+      
+      // 총 비디오 수 조회
+      const total = await this.countLikedVideos(userId, filter);
+      
+      return {
+        videos,
+        total,
+        limit,
+        offset
+      };
     } catch (error) {
-      console.error('좋아요한 영상 조회 오류:', error);
-      return [];
+      console.error('좋아요 영상 조회 오류:', error);
+      throw error;
     }
   }
-  
-  // 메타데이터만 가져오는 함수 (채널, 게시일, 영상 길이 정보)
+
   async getVideoMetadata(userId) {
     try {
-      console.log(`사용자 ${userId}의 비디오 메타데이터 로드 중...`);
+      // 메타데이터만 필요한 정보 추출 (썸네일 제외)
+      const query = db.select({
+        channelId: likedVideos.channelId,
+        channelTitle: likedVideos.channelTitle,
+        title: likedVideos.title,
+        publishedAt: likedVideos.publishedAt,
+        duration: likedVideos.duration,
+        videoId: likedVideos.videoId
+      }).from(likedVideos);
       
-      // 1. 채널 정보 가져오기 - 전체 DB에서 채널 정보 로드
-      const query = `
-        SELECT 
-          channel_id AS "channelId", 
-          channel_title AS "channelTitle", 
-          COUNT(*) AS "videoCount"
-        FROM liked_videos
-        WHERE user_id = $1
-        GROUP BY channel_id, channel_title
-        ORDER BY channel_title DESC
-      `;
+      // 사용자 ID로 필터링
+      query.where(eq(likedVideos.userId, userId));
       
-      const channelsResult = await pool.query(query, [userId]);
-      const channels = channelsResult.rows;
+      // 중복 채널 제거를 위한 Set
+      const channelsMap = new Map();
+      const videos = [];
       
-      // 2. 모든 채널에 대해 첫/마지막 게시일 정보 추가 (선택적)
-      const channelsWithDetails = await Promise.all(channels.map(async (channel) => {
-        // 각 채널별 가장 최근 및 가장 오래된 영상 게시일 확인
-        const dateQuery = `
-          SELECT 
-            MAX(published_at) AS "latestDate",
-            MIN(published_at) AS "oldestDate"
-          FROM liked_videos
-          WHERE user_id = $1 AND channel_id = $2
-        `;
+      // 결과 처리
+      const results = await query;
+      
+      results.forEach(video => {
+        // 비디오 정보 저장
+        videos.push({
+          channelId: video.channelId,
+          channelTitle: video.channelTitle,
+          title: video.title,
+          publishedAt: video.publishedAt,
+          duration: video.duration,
+          videoId: video.videoId
+        });
         
-        const dateResult = await pool.query(dateQuery, [userId, channel.channelId]);
-        const dateInfo = dateResult.rows[0];
-        
-        return {
-          ...channel,
-          latestDate: dateInfo.latestDate,
-          oldestDate: dateInfo.oldestDate,
-          // 숫자값이 문자열로 인식되는 문제 방지를 위해 숫자로 변환하여 반환
-          videoCount: parseInt(channel.videoCount)
-        };
-      }));
+        // 채널 정보 저장 (중복 제거)
+        if (video.channelId && !channelsMap.has(video.channelId)) {
+          channelsMap.set(video.channelId, {
+            id: video.channelId,
+            title: video.channelTitle,
+            videoCount: 1
+          });
+        } else if (video.channelId) {
+          // 채널이 이미 있으면 비디오 개수 증가
+          const channel = channelsMap.get(video.channelId);
+          channel.videoCount++;
+          channelsMap.set(video.channelId, channel);
+        }
+      });
       
-      console.log(`${channels.length}개 채널 메타데이터 로드됨`);
-      
-      return { 
-        channels: channelsWithDetails,
-        totalVideos: await this.countLikedVideos(userId)
+      return {
+        channels: Array.from(channelsMap.values()),
+        videos,
+        totalVideos: videos.length
       };
     } catch (error) {
-      console.error('메타데이터 로드 오류:', error);
-      return { 
-        channels: [],
-        totalVideos: 0
-      };
+      console.error('메타데이터 조회 오류:', error);
+      throw error;
     }
   }
-  
-  // 좋아요한 비디오 총 개수 조회
+
   async countLikedVideos(userId, filter = {}) {
     try {
-      let query = db
-        .select({ count: sql`count(*)` })
-        .from(likedVideos)
-        .where(eq(likedVideos.userId, userId));
+      let query = db.select({ count: sql`count(*)` }).from(likedVideos);
+      
+      // 기본 필터: 사용자 ID
+      query = query.where(eq(likedVideos.userId, userId));
       
       // 채널 필터 적용
       if (filter.channelId) {
         query = query.where(eq(likedVideos.channelId, filter.channelId));
       }
       
-      // 검색어 필터 적용 (제목에만 포함)
+      // 검색어 필터 적용 (제목에만 포함, 대소문자 구분 없음)
       if (filter.search) {
         query = query.where(
-          like(likedVideos.title, `%${filter.search}%`)
+          like(sql`LOWER(${likedVideos.title})`, `%${filter.search.toLowerCase()}%`)
         );
       }
       
@@ -274,25 +296,36 @@ class Storage {
         }
       }
       
-      // 영상 길이 필터 적용
+      // 기간 필터 적용
       if (filter.duration) {
+        let durationSeconds;
+        
         if (filter.duration === 'short') {
-          // 4분 미만 (PT4M 미만)
-          query = query.where(sql`${likedVideos.duration} < 'PT4M'`);
+          // 4분 미만
+          durationSeconds = 4 * 60;
+          query = query.where(sql`${likedVideos.duration} < ${durationSeconds}`);
         } else if (filter.duration === 'medium') {
-          // 4-20분 (PT4M 이상 PT20M 이하)
-          query = query.where(sql`${likedVideos.duration} >= 'PT4M' AND ${likedVideos.duration} <= 'PT20M'`);
+          // 4분 이상 20분 미만
+          const minSeconds = 4 * 60;
+          const maxSeconds = 20 * 60;
+          query = query.where(
+            and(
+              sql`${likedVideos.duration} >= ${minSeconds}`,
+              sql`${likedVideos.duration} < ${maxSeconds}`
+            )
+          );
         } else if (filter.duration === 'long') {
-          // 20분 초과 (PT20M 초과)
-          query = query.where(sql`${likedVideos.duration} > 'PT20M'`);
+          // 20분 이상
+          durationSeconds = 20 * 60;
+          query = query.where(sql`${likedVideos.duration} >= ${durationSeconds}`);
         }
       }
       
-      const [result] = await query;
-      return result?.count || 0;
+      const result = await query;
+      return parseInt(result[0].count || '0', 10);
     } catch (error) {
-      console.error('비디오 개수 조회 오류:', error);
-      return 0;
+      console.error('영상 개수 조회 오류:', error);
+      throw error;
     }
   }
 
@@ -301,54 +334,75 @@ class Storage {
       const [video] = await db.select().from(likedVideos).where(eq(likedVideos.id, id));
       return video;
     } catch (error) {
-      console.error('영상 조회 오류:', error);
-      return null;
+      console.error('좋아요 영상 조회 오류:', error);
+      throw error;
     }
   }
 
   async getLikedVideoByVideoId(userId, videoId) {
     try {
-      const [video] = await db
-        .select()
-        .from(likedVideos)
-        .where(and(
-          eq(likedVideos.userId, userId),
-          eq(likedVideos.videoId, videoId)
-        ));
+      const [video] = await db.select().from(likedVideos)
+        .where(
+          and(
+            eq(likedVideos.userId, userId),
+            eq(likedVideos.videoId, videoId)
+          )
+        );
       return video;
     } catch (error) {
-      console.error('videoId로 영상 조회 오류:', error);
-      return null;
+      console.error('좋아요 영상 조회 오류:', error);
+      throw error;
     }
   }
 
   async saveLikedVideo(userId, videoData) {
     try {
-      // 이미 존재하는지 확인
-      const existingVideo = await this.getLikedVideoByVideoId(userId, videoData.videoId);
+      // 이미 있는지 확인
+      const existing = await this.getLikedVideoByVideoId(userId, videoData.videoId);
       
-      if (existingVideo) {
-        // 업데이트 - 단, createdAt 필드는 변경하지 않음 (좋아요 한 시점 보존)
-        // 좋아요 날짜로 사용되는 createdAt 필드를 업데이트 객체에서 제거
-        const { createdAt, ...dataToUpdate } = videoData;
-        
+      if (existing) {
+        // 이미 있으면 업데이트
         const [updatedVideo] = await db
           .update(likedVideos)
-          .set(dataToUpdate)
-          .where(eq(likedVideos.id, existingVideo.id))
+          .set({
+            title: videoData.title,
+            description: videoData.description,
+            thumbnail: videoData.thumbnail,
+            channelTitle: videoData.channelTitle,
+            publishedAt: videoData.publishedAt,
+            duration: videoData.duration,
+            viewCount: videoData.viewCount,
+            likeCount: videoData.likeCount,
+            updatedAt: new Date(),
+            metadata: videoData.metadata
+          })
+          .where(eq(likedVideos.id, existing.id))
           .returning();
         return updatedVideo;
       } else {
-        // 새로 저장 - 이 경우에는 현재 시간이 좋아요 한 시점으로 저장됨
+        // 없으면 새로 추가
         const [newVideo] = await db
           .insert(likedVideos)
-          .values({...videoData, userId})
+          .values({
+            userId,
+            videoId: videoData.videoId,
+            title: videoData.title,
+            description: videoData.description,
+            thumbnail: videoData.thumbnail,
+            channelId: videoData.channelId,
+            channelTitle: videoData.channelTitle,
+            publishedAt: videoData.publishedAt,
+            duration: videoData.duration,
+            viewCount: videoData.viewCount,
+            likeCount: videoData.likeCount,
+            metadata: videoData.metadata
+          })
           .returning();
         return newVideo;
       }
     } catch (error) {
-      console.error('좋아요한 영상 저장 오류:', error);
-      return null;
+      console.error('좋아요 영상 저장 오류:', error);
+      throw error;
     }
   }
 
@@ -357,23 +411,19 @@ class Storage {
       await db.delete(likedVideos).where(eq(likedVideos.id, id));
       return true;
     } catch (error) {
-      console.error('좋아요한 영상 삭제 오류:', error);
-      return false;
+      console.error('좋아요 영상 삭제 오류:', error);
+      throw error;
     }
   }
 
   // 재생목록 관련 메서드
   async getPlaylists(userId) {
     try {
-      const userPlaylists = await db
-        .select()
-        .from(playlists)
-        .where(eq(playlists.userId, userId))
-        .orderBy(desc(playlists.createdAt));
+      const userPlaylists = await db.select().from(playlists).where(eq(playlists.userId, userId));
       return userPlaylists;
     } catch (error) {
       console.error('재생목록 조회 오류:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -383,17 +433,17 @@ class Storage {
       return playlist;
     } catch (error) {
       console.error('재생목록 조회 오류:', error);
-      return null;
+      throw error;
     }
   }
 
   async createPlaylist(playlistData) {
     try {
-      const [newPlaylist] = await db.insert(playlists).values(playlistData).returning();
-      return newPlaylist;
+      const [playlist] = await db.insert(playlists).values(playlistData).returning();
+      return playlist;
     } catch (error) {
       console.error('재생목록 생성 오류:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -401,91 +451,62 @@ class Storage {
     try {
       const [updatedPlaylist] = await db
         .update(playlists)
-        .set({...playlistData, updatedAt: new Date()})
+        .set(playlistData)
         .where(eq(playlists.id, id))
         .returning();
       return updatedPlaylist;
     } catch (error) {
       console.error('재생목록 업데이트 오류:', error);
-      return null;
+      throw error;
     }
   }
 
   async deletePlaylist(id) {
     try {
-      // 먼저 재생목록 내 영상 관계를 삭제
+      // 재생목록 항목 먼저 삭제
       await db.delete(playlistVideos).where(eq(playlistVideos.playlistId, id));
-      // 그런 다음 재생목록 자체를 삭제
+      
+      // 재생목록 삭제
       await db.delete(playlists).where(eq(playlists.id, id));
       return true;
     } catch (error) {
       console.error('재생목록 삭제 오류:', error);
-      return false;
+      throw error;
     }
   }
 
-  // 재생목록 내 영상 관련 메서드
+  // 재생목록 영상 관련 메서드
   async getPlaylistVideos(playlistId) {
     try {
-      // 재생목록 내 영상 순서대로 가져오기
-      const playlistItems = await db
-        .select({
-          id: playlistVideos.id,
-          position: playlistVideos.position,
-          videoId: likedVideos.id,
-          youtubeId: likedVideos.videoId,
-          title: likedVideos.title,
-          description: likedVideos.description,
-          channelId: likedVideos.channelId,
-          channelTitle: likedVideos.channelTitle,
-          publishedAt: likedVideos.publishedAt,
-          thumbnailUrl: likedVideos.thumbnailUrl,
-          duration: likedVideos.duration,
-          viewCount: likedVideos.viewCount,
-          likeCount: likedVideos.likeCount
-        })
-        .from(playlistVideos)
-        .leftJoin(likedVideos, eq(playlistVideos.videoId, likedVideos.id))
-        .where(eq(playlistVideos.playlistId, playlistId))
-        .orderBy(asc(playlistVideos.position));
+      const items = await db.select({
+        item: playlistVideos,
+        video: likedVideos
+      })
+      .from(playlistVideos)
+      .innerJoin(likedVideos, eq(playlistVideos.videoId, likedVideos.id))
+      .where(eq(playlistVideos.playlistId, playlistId))
+      .orderBy(asc(playlistVideos.position));
       
-      return playlistItems;
+      return items.map(item => ({
+        ...item.item,
+        video: item.video
+      }));
     } catch (error) {
       console.error('재생목록 영상 조회 오류:', error);
-      return [];
+      throw error;
     }
   }
 
   async addVideoToPlaylist(playlistId, videoId, position) {
     try {
-      // 같은 영상이 이미 재생목록에 있는지 확인
-      const [existing] = await db
-        .select()
-        .from(playlistVideos)
-        .where(and(
-          eq(playlistVideos.playlistId, playlistId),
-          eq(playlistVideos.videoId, videoId)
-        ));
-      
-      if (existing) {
-        // 이미 있으면 위치만 업데이트
-        const [updated] = await db
-          .update(playlistVideos)
-          .set({ position })
-          .where(eq(playlistVideos.id, existing.id))
-          .returning();
-        return updated;
-      }
-      
-      // 새로 추가
-      const [newItem] = await db
+      const [item] = await db
         .insert(playlistVideos)
         .values({ playlistId, videoId, position })
         .returning();
-      return newItem;
+      return item;
     } catch (error) {
       console.error('재생목록에 영상 추가 오류:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -495,74 +516,59 @@ class Storage {
       return true;
     } catch (error) {
       console.error('재생목록에서 영상 제거 오류:', error);
-      return false;
+      throw error;
     }
   }
 
   // 사용자 설정 관련 메서드
   async getUserSettings(userId) {
     try {
-      const [settings] = await db
-        .select()
-        .from(userSettings)
-        .where(eq(userSettings.userId, userId));
-      
-      if (settings) {
-        return settings;
-      }
-      
-      // 없으면 기본 설정 생성
-      return this.createUserSettings(userId, {
-        defaultView: 'grid',
-        videosPerPage: 50,
-        theme: 'light',
-        preferences: {}
-      });
+      const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
+      return settings;
     } catch (error) {
       console.error('사용자 설정 조회 오류:', error);
-      return null;
+      throw error;
     }
   }
 
   async createUserSettings(userId, settingsData) {
     try {
-      const [newSettings] = await db
+      const [settings] = await db
         .insert(userSettings)
-        .values({ userId, ...settingsData })
+        .values({
+          userId,
+          ...settingsData
+        })
         .returning();
-      return newSettings;
+      return settings;
     } catch (error) {
       console.error('사용자 설정 생성 오류:', error);
-      return null;
+      throw error;
     }
   }
 
   async updateUserSettings(userId, settingsData) {
     try {
-      // 기존 설정 확인
-      const [existing] = await db
-        .select()
-        .from(userSettings)
-        .where(eq(userSettings.userId, userId));
+      // 설정이 있는지 확인
+      const settings = await this.getUserSettings(userId);
       
-      if (existing) {
-        // 업데이트
-        const [updated] = await db
+      if (settings) {
+        // 있으면 업데이트
+        const [updatedSettings] = await db
           .update(userSettings)
-          .set({...settingsData, updatedAt: new Date()})
-          .where(eq(userSettings.id, existing.id))
+          .set(settingsData)
+          .where(eq(userSettings.userId, userId))
           .returning();
-        return updated;
+        return updatedSettings;
       } else {
-        // 생성
-        return this.createUserSettings(userId, settingsData);
+        // 없으면 생성
+        return await this.createUserSettings(userId, settingsData);
       }
     } catch (error) {
       console.error('사용자 설정 업데이트 오류:', error);
-      return null;
+      throw error;
     }
   }
 }
 
-// 단일 인스턴스 내보내기
 module.exports = new Storage();
