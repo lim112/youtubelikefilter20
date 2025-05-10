@@ -5,6 +5,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const path = require('path');
+const isNetlify = process.env.NETLIFY === 'true';
 
 // 데이터베이스 및 스토리지 가져오기
 const storage = require('./storage');
@@ -44,11 +45,25 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// 환경에 따른 콜백 URL 설정
+const getCallbackURL = () => {
+  if (isNetlify) {
+    // Netlify 환경
+    return "/.netlify/functions/api/auth/google/callback";
+  } else if (process.env.REPLIT_DEV_DOMAIN) {
+    // Replit 환경
+    return `https://${process.env.REPLIT_DEV_DOMAIN}/auth/google/callback`;
+  } else {
+    // 로컬 개발 환경
+    return "http://localhost:5000/auth/google/callback";
+  }
+};
+
 // Google OAuth 전략 설정
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "https://aaf1bf4e-db4b-4c00-a54b-6795102745aa-00-2inq0qxzvmr15.janeway.replit.dev/auth/google/callback",
+  callbackURL: getCallbackURL(),
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.readonly'],
   accessType: 'offline',  // 리프레시 토큰을 받기 위해 'offline' 설정
   prompt: 'consent'       // 사용자에게 항상 동의 요청하여 리프레시 토큰 발급받기
